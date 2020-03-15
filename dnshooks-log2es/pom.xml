@@ -11,6 +11,12 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dnshooks-log2es</artifactId>
     <name>dnshooks-log2es</name>
-    <description>DNS Hook: log DNS record message to Elastcisearch</description>
+    <description>DNS Hook: log DNS record message to Elasticsearch</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>cn.fantasticmao.dnshook</groupId>
+            <artifactId>dnshooks-proxy</artifactId>
+        </dependency>
+    </dependencies>
 </project>

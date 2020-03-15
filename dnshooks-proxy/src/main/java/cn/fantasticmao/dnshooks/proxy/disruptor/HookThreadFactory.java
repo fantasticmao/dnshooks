@@ -1,4 +1,4 @@
-package cn.fantasticmao.dnshooks.proxy;
+package cn.fantasticmao.dnshooks.proxy.disruptor;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,14 +9,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author maomao
  * @since 2020-03-12
  */
-enum HookThreadFactory implements ThreadFactory {
+public enum HookThreadFactory implements ThreadFactory {
     INSTANCE;
 
     private static AtomicInteger count = new AtomicInteger(0);
 
     @Override
     public Thread newThread(Runnable runnable) {
-        String threadName = "dnshook-handler-" + count.incrementAndGet();
+        String threadName = "DNS-hook-processor-" + count.incrementAndGet();
         Thread thread = new Thread(runnable, threadName);
         thread.setDaemon(true);
         return thread;
