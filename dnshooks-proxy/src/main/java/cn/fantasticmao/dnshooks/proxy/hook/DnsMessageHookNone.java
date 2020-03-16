@@ -19,8 +19,7 @@ public class DnsMessageHookNone implements DnsMessageHook {
     @Override
     public void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception {
         // do nothing
-        System.out.println(event.getContent());
-        System.out.println(event.getSender());
-        System.out.println(event.getRecipient());
+        System.out.println("query: " + event.getQuery());
+        System.out.println("response: " + event.getResponse());
     }
 }

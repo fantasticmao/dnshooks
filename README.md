@@ -8,4 +8,4 @@ A simple DNS proxy, with support for some hooks (such as webhooks).
 * RFC 2181 [Clarifications to the DNS Specification](https://tools.ietf.org/html/rfc2181)
 * RFC 2535 [Domain Name System Security Extensions](https://tools.ietf.org/html/rfc2535)
 * RFC 2929 [Domain Name System (DNS) IANA Considerations](https://tools.ietf.org/html/rfc2929)
- 
+* RFC 7766 [DNS Transport over TCP - Implementation Requirements](https://tools.ietf.org/html/rfc7766)

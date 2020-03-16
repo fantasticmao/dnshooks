@@ -2,7 +2,7 @@ package cn.fantasticmao.dnshooks.proxy.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.DatagramPacket;
+import io.netty.handler.codec.dns.DnsResponse;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
@@ -13,14 +13,14 @@ import java.util.concurrent.LinkedTransferQueue;
  * @author maomao
  * @since 2020/3/15
  */
-public class DnsProxyClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-    private BlockingQueue<DatagramPacket> answer;
+public class DnsProxyClientHandler extends SimpleChannelInboundHandler<DnsResponse> {
+    private BlockingQueue<DnsResponse> answer;
 
     public DnsProxyClientHandler() {
         this.answer = new LinkedTransferQueue<>();
     }
 
-    public DatagramPacket getResponse() {
+    public DnsResponse getResponse() {
         boolean interrupted = false;
         try {
             for (; ; ) {
@@ -38,8 +38,7 @@ public class DnsProxyClientHandler extends SimpleChannelInboundHandler<DatagramP
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
-        System.out.println(msg);
+    public void channelRead0(ChannelHandlerContext ctx, DnsResponse msg) throws Exception {
         this.answer.offer(msg);
     }
 

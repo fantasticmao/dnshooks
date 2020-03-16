@@ -18,8 +18,7 @@ public class DnsMessageHookHttp implements DnsMessageHook {
 
     @Override
     public void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception {
-        System.out.println(event.getContent());
-        System.out.println(event.getSender());
-        System.out.println(event.getRecipient());
+        // TODO implement default HTTP hook
+        throw new UnsupportedOperationException("TODO implement default HTTP hook");
     }
 }

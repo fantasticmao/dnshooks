@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -18,14 +19,20 @@ public class DnsProxyClientTest {
 
     @Test
     public void lookup() {
+        List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
+        if (dnsServerAddressList.size() == 0) {
+            return;
+        }
+
+        final InetSocketAddress dnsServerAddress = dnsServerAddressList.get(0);
         final int id = idGenerator.nextInt(Short.MAX_VALUE);
-        System.out.println(id);
-        InetSocketAddress recipient = new InetSocketAddress("192.168.1.1", 53);
-        final DnsQuery dnsQuery = new DatagramDnsQuery(null, recipient, id);
+        System.out.println("Transaction ID: " + id);
+
+        final DatagramDnsQuery dnsQuery = new DatagramDnsQuery(null, dnsServerAddress, id);
         dnsQuery.addRecord(DnsSection.QUESTION, new DefaultDnsQuestion("fantasticmao.cn", DnsRecordType.A));
 
         try (DnsProxyClient client = new DnsProxyClient()) {
-            DnsResponse response = client.lookup(dnsQuery);
+            DnsResponse response = client.lookup(dnsServerAddress, dnsQuery);
             Assert.assertNotNull(response);
             System.out.println(response.toString());
         } catch (InterruptedException e) {

@@ -16,7 +16,7 @@ public enum HookThreadFactory implements ThreadFactory {
 
     @Override
     public Thread newThread(Runnable runnable) {
-        String threadName = "DNS-hook-processor-" + count.incrementAndGet();
+        String threadName = "DNSHooks-Processor-" + count.incrementAndGet();
         Thread thread = new Thread(runnable, threadName);
         thread.setDaemon(true);
         return thread;

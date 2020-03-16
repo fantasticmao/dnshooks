@@ -1,8 +1,7 @@
 package cn.fantasticmao.dnshooks.proxy.disruptor;
 
+import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
-
-import java.net.SocketAddress;
 
 /**
  * DnsMessage
@@ -11,34 +10,25 @@ import java.net.SocketAddress;
  * @since 2020-03-12
  */
 public class DnsMessage {
-    private DnsResponse content;
-    private SocketAddress sender;
-    private SocketAddress recipient;
+    private DnsQuery query;
+    private DnsResponse response;
 
     public DnsMessage() {
     }
 
-    public DnsResponse getContent() {
-        return content;
+    public DnsQuery getQuery() {
+        return query;
     }
 
-    public void setContent(DnsResponse content) {
-        this.content = content;
+    public void setQuery(DnsQuery query) {
+        this.query = query;
     }
 
-    public SocketAddress getSender() {
-        return sender;
+    public DnsResponse getResponse() {
+        return response;
     }
 
-    public void setSender(SocketAddress sender) {
-        this.sender = sender;
-    }
-
-    public SocketAddress getRecipient() {
-        return recipient;
-    }
-
-    public void setRecipient(SocketAddress recipient) {
-        this.recipient = recipient;
+    public void setResponse(DnsResponse response) {
+        this.response = response;
     }
 }

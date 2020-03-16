@@ -16,11 +16,11 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.dns.DatagramDnsQueryDecoder;
+import io.netty.handler.codec.dns.DatagramDnsResponseEncoder;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * @author maomao
  * @since 2020-03-11
  */
-public class DnsProxyServer implements Callable<ChannelFuture>, AutoCloseable {
+public class DnsProxyServer implements AutoCloseable {
     private final Disruptor<DnsMessage> disruptor;
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
@@ -43,7 +43,7 @@ public class DnsProxyServer implements Callable<ChannelFuture>, AutoCloseable {
         List<DnsMessageHook> handlerList = new LinkedList<>();
         ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
         // register all DNS hooks as event handler to disruptor
-        disruptor.handleEventsWith(handlerList.toArray(new DnsMessageHook[0]));
+        this.disruptor.handleEventsWith(handlerList.toArray(new DnsMessageHook[0]));
         // start disruptor
         this.disruptor.start();
 
@@ -59,17 +59,16 @@ public class DnsProxyServer implements Callable<ChannelFuture>, AutoCloseable {
                 protected void initChannel(NioDatagramChannel ch) throws Exception {
                     ch.pipeline()
                         .addLast(new DatagramDnsQueryDecoder())
-                        .addLast(new DatagramDnsResponseHookEncoder(DnsProxyServer.this.disruptor));
+                        .addLast(new DatagramDnsResponseEncoder())
+                        .addLast(new DnsProxyServerDatagramHandler(DnsProxyServer.this.disruptor));
                 }
             });
     }
 
-    @Override
-    public ChannelFuture call() throws Exception {
+    public void run() throws Exception {
         ChannelFuture future = this.bootstrap.bind().sync();
-        System.out.println("start DNS proxy server success!");
+        System.out.println("start DNSHooks-Proxy success");
         future.channel().closeFuture().sync();
-        return future;
     }
 
     @Override
