@@ -11,12 +11,13 @@ import java.util.concurrent.LinkedTransferQueue;
  * DnsProxyClientHandler
  *
  * @author maomao
- * @since 2020/3/15
+ * @since 2020-03-15
  */
-public class DnsProxyClientHandler extends SimpleChannelInboundHandler<DnsResponse> {
+class DnsProxyClientHandler extends SimpleChannelInboundHandler<DnsResponse> {
     private BlockingQueue<DnsResponse> answer;
 
-    public DnsProxyClientHandler() {
+    DnsProxyClientHandler() {
+        super(false);
         this.answer = new LinkedTransferQueue<>();
     }
 

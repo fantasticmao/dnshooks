@@ -9,7 +9,7 @@ import java.util.List;
  * DnsServerAddressUtilTest
  *
  * @author maomao
- * @since 2020/3/16
+ * @since 2020-03-16
  */
 public class DnsServerAddressUtilTest {
 

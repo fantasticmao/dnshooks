@@ -6,7 +6,7 @@ import com.lmax.disruptor.EventHandler;
  * DnsMessageHook
  *
  * @author maomao
- * @since 2020/3/15
+ * @since 2020-03-15
  */
 public interface DnsMessageHook extends EventHandler<DnsMessage> {
 

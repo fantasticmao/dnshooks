@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * DnsProxyClientTest
+ * DnsProxyDatagramClientTest
  *
  * @author maomao
- * @since 2020/3/14
+ * @since 2020-03-14
  */
-public class DnsProxyClientTest {
+public class DnsProxyDatagramClientTest {
     private Random idGenerator = new Random();
 
     @Test
@@ -31,7 +31,7 @@ public class DnsProxyClientTest {
         final DatagramDnsQuery dnsQuery = new DatagramDnsQuery(null, dnsServerAddress, id);
         dnsQuery.addRecord(DnsSection.QUESTION, new DefaultDnsQuestion("fantasticmao.cn", DnsRecordType.A));
 
-        try (DnsProxyClient client = new DnsProxyClient()) {
+        try (DnsProxyDatagramClient client = new DnsProxyDatagramClient()) {
             DnsResponse response = client.lookup(dnsServerAddress, dnsQuery);
             Assert.assertNotNull(response);
             System.out.println(response.toString());

@@ -9,14 +9,12 @@ import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.dns.DatagramDnsQueryDecoder;
 import io.netty.handler.codec.dns.DatagramDnsResponseEncoder;
+import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +31,7 @@ public class DnsProxyServer implements AutoCloseable {
     private final Disruptor<DnsMessage> disruptor;
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
+    private final DnsProxyClient proxyClient;
 
     public DnsProxyServer(int ringBufferSize) {
         // use blocking wait strategy，avoid to cost a lot of CPU resources
@@ -42,13 +41,16 @@ public class DnsProxyServer implements AutoCloseable {
         // use ServiceLoader to find all DNS hooks
         List<DnsMessageHook> handlerList = new LinkedList<>();
         ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
-        // register all DNS hooks as event handler to disruptor
+        // register all DNS hooks as event handler to Disruptor
         this.disruptor.handleEventsWith(handlerList.toArray(new DnsMessageHook[0]));
-        // start disruptor
+        // start Disruptor
         this.disruptor.start();
 
+        // new DnsProxyClient instance
+        this.proxyClient = new DnsProxyDatagramClient();
+
         // config netty Bootstrap
-        this.workerGroup = new NioEventLoopGroup();
+        this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DnsProxyServer"));
         this.bootstrap = new Bootstrap()
             .group(workerGroup)
             .channel(NioDatagramChannel.class)
@@ -60,7 +62,8 @@ public class DnsProxyServer implements AutoCloseable {
                     ch.pipeline()
                         .addLast(new DatagramDnsQueryDecoder())
                         .addLast(new DatagramDnsResponseEncoder())
-                        .addLast(new DnsProxyServerDatagramHandler(DnsProxyServer.this.disruptor));
+                        .addLast(new DnsProxyServerHandler(DnsProxyServer.this.proxyClient,
+                            DnsProxyServer.this.disruptor));
                 }
             });
     }
@@ -68,11 +71,22 @@ public class DnsProxyServer implements AutoCloseable {
     public void run() throws Exception {
         ChannelFuture future = this.bootstrap.bind().sync();
         System.out.println("start DNSHooks-Proxy success");
-        future.channel().closeFuture().sync();
+        future.channel().closeFuture().sync().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                // release Disruptor resources
+                DnsProxyServer.this.close();
+
+                if (!future.isSuccess()) {
+                    future.cause().printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
     public void close() throws Exception {
+        this.proxyClient.close();
         this.disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
         this.workerGroup.shutdownGracefully();
     }

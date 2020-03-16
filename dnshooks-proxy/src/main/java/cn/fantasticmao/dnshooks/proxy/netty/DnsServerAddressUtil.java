@@ -14,7 +14,7 @@ import java.util.List;
  * DnsServerAddressUtil
  *
  * @author maomao
- * @since 2020/3/16
+ * @since 2020-03-16
  */
 class DnsServerAddressUtil {
     private static DnsServerAddressStreamProvider provider = DnsServerAddressStreamProviders.platformDefault();

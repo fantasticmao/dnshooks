@@ -7,7 +7,7 @@ import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageHook;
  * DnsMessageHookNone
  *
  * @author maomao
- * @since 2020/3/15
+ * @since 2020-03-15
  */
 public class DnsMessageHookNone implements DnsMessageHook {
 

@@ -1,12 +1,7 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.handler.codec.dns.DatagramDnsQuery;
-import io.netty.handler.codec.dns.DatagramDnsQueryEncoder;
-import io.netty.handler.codec.dns.DatagramDnsResponseDecoder;
+import io.netty.channel.AddressedEnvelope;
+import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
 
 import java.net.InetSocketAddress;
@@ -17,46 +12,72 @@ import java.net.InetSocketAddress;
  * @author maomao
  * @since 2020-03-12
  */
-class DnsProxyClient implements AutoCloseable {
-    private final EventLoopGroup workerGroup;
-    private final Bootstrap bootstrap;
+abstract class DnsProxyClient implements AutoCloseable {
 
-    public DnsProxyClient() {
-        this.workerGroup = new NioEventLoopGroup();
-        this.bootstrap = new Bootstrap()
-            .group(workerGroup)
-            .channel(NioDatagramChannel.class)
-            .option(ChannelOption.SO_BROADCAST, true)
-            .handler(new ChannelInitializer<NioDatagramChannel>() {
-                @Override
-                protected void initChannel(NioDatagramChannel ch) throws Exception {
-                    ch.pipeline()
-                        .addLast(new DatagramDnsQueryEncoder())
-                        .addLast(new DatagramDnsResponseDecoder())
-                        .addLast(new DnsProxyClientHandler());
-                }
-            });
-    }
+    protected abstract DnsResponse lookup(final InetSocketAddress nameServer, final DnsQuery query)
+        throws Exception;
 
-    public DnsResponse lookup(final InetSocketAddress nameServer, final DatagramDnsQuery query) throws InterruptedException {
-        Channel channel = this.bootstrap.connect(nameServer).sync().channel();
-        try {
-            channel.writeAndFlush(query).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        future.cause().printStackTrace();
-                    }
-                }
-            });
-            return channel.pipeline().get(DnsProxyClientHandler.class).getResponse();
-        } finally {
-            channel.close();
+    protected static final class AddressedEnvelopeAdapter
+        implements AddressedEnvelope<DnsQuery, InetSocketAddress> {
+        private final InetSocketAddress sender;
+        private final InetSocketAddress recipient;
+        private final AddressedEnvelope<DnsQuery, InetSocketAddress> in;
+
+        AddressedEnvelopeAdapter(InetSocketAddress sender, InetSocketAddress recipient,
+                                 AddressedEnvelope<DnsQuery, InetSocketAddress> in) {
+            this.sender = sender;
+            this.recipient = recipient;
+            this.in = in;
         }
-    }
 
-    @Override
-    public void close() {
-        this.workerGroup.shutdownGracefully();
+        @Override
+        public DnsQuery content() {
+            return in.content();
+        }
+
+        @Override
+        public InetSocketAddress sender() {
+            return this.sender;
+        }
+
+        @Override
+        public InetSocketAddress recipient() {
+            return this.recipient;
+        }
+
+        @Override
+        public AddressedEnvelope<DnsQuery, InetSocketAddress> retain() {
+            return in.retain();
+        }
+
+        @Override
+        public AddressedEnvelope<DnsQuery, InetSocketAddress> retain(int increment) {
+            return in.retain(increment);
+        }
+
+        @Override
+        public AddressedEnvelope<DnsQuery, InetSocketAddress> touch() {
+            return in.touch();
+        }
+
+        @Override
+        public AddressedEnvelope<DnsQuery, InetSocketAddress> touch(Object hint) {
+            return in.touch(hint);
+        }
+
+        @Override
+        public int refCnt() {
+            return in.refCnt();
+        }
+
+        @Override
+        public boolean release() {
+            return in.release();
+        }
+
+        @Override
+        public boolean release(int decrement) {
+            return in.release(decrement);
+        }
     }
 }
