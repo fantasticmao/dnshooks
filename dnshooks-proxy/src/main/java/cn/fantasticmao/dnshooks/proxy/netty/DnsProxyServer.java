@@ -74,9 +74,6 @@ public class DnsProxyServer implements AutoCloseable {
         future.channel().closeFuture().sync().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                // release Disruptor resources
-                DnsProxyServer.this.close();
-
                 if (!future.isSuccess()) {
                     future.cause().printStackTrace();
                 }

@@ -48,7 +48,7 @@ class DnsProxyDatagramClient extends DnsProxyClient {
         }
         Channel channel = this.bootstrap.connect(nameServer).sync().channel();
         try {
-            channel.writeAndFlush(query).addListener(new ChannelFutureListener() {
+            channel.writeAndFlush(query.retain()).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {

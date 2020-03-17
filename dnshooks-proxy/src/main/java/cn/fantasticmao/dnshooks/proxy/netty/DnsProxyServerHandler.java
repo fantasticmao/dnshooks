@@ -28,12 +28,8 @@ class DnsProxyServerHandler extends SimpleChannelInboundHandler<DnsQuery> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DnsQuery query) throws Exception {
-        // DnsQuery will be written and released once by DnsProxyClient instance,
-        // so wo should call ReferenceCounted#retain().
-        query.retain();
-        final DnsResponse response = proxy(query);
+        final DnsResponse response = this.proxy(query);
         try {
-            // write dns response
             ctx.writeAndFlush(response);
         } finally {
             this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE, query, response);
@@ -43,6 +39,7 @@ class DnsProxyServerHandler extends SimpleChannelInboundHandler<DnsQuery> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
+        // TODO return error
         ctx.close();
     }
 

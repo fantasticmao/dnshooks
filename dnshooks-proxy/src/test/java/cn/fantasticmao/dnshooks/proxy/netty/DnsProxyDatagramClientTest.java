@@ -34,7 +34,7 @@ public class DnsProxyDatagramClientTest {
         try (DnsProxyDatagramClient client = new DnsProxyDatagramClient()) {
             DnsResponse response = client.lookup(dnsServerAddress, dnsQuery);
             Assert.assertNotNull(response);
-            System.out.println(response.toString());
+            System.out.println("DnsResponse: " + response.toString());
         } catch (InterruptedException e) {
             Assert.fail(e.getMessage());
         }
