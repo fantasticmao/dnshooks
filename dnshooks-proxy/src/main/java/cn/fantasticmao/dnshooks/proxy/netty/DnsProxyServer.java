@@ -61,9 +61,9 @@ public class DnsProxyServer implements AutoCloseable {
                 protected void initChannel(NioDatagramChannel ch) throws Exception {
                     ch.pipeline()
                         .addLast(new DatagramDnsQueryDecoder())
+                        .addLast(new DnsProxyServerClientHandler(DnsProxyServer.this.proxyClient))
                         .addLast(new DatagramDnsResponseEncoder())
-                        .addLast(new DnsProxyServerHandler(DnsProxyServer.this.proxyClient,
-                            DnsProxyServer.this.disruptor));
+                        .addLast(new DnsProxyServerDisruptorHandler(DnsProxyServer.this.disruptor));
                 }
             });
     }

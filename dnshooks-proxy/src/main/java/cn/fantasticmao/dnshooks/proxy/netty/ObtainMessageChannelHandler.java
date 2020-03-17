@@ -2,26 +2,26 @@ package cn.fantasticmao.dnshooks.proxy.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.dns.DnsResponse;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * DnsProxyClientHandler
+ * ObtainMessageChannelHandler
  *
  * @author maomao
  * @since 2020-03-15
  */
-class DnsProxyClientHandler extends SimpleChannelInboundHandler<DnsResponse> {
-    private BlockingQueue<DnsResponse> answer;
+class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
+    private final BlockingQueue<T> answer;
 
-    DnsProxyClientHandler() {
-        super(false);
-        this.answer = new LinkedTransferQueue<>();
+    ObtainMessageChannelHandler(Class<? extends T> inboundMessageType) {
+        super(inboundMessageType, false);
+        // notice: LinkedBlockingQueue may cause OutOfMemoryError
+        this.answer = new LinkedBlockingQueue<>();
     }
 
-    public DnsResponse getResponse() {
+    public T getMessage() {
         boolean interrupted = false;
         try {
             for (; ; ) {
@@ -39,7 +39,7 @@ class DnsProxyClientHandler extends SimpleChannelInboundHandler<DnsResponse> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, DnsResponse msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
         this.answer.offer(msg);
     }
 

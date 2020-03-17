@@ -6,6 +6,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.dns.*;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.net.InetSocketAddress;
@@ -20,7 +21,7 @@ import java.util.List;
 class DnsProxyDatagramClient extends DnsProxyClient {
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
-    private static final ThreadLocal<InetSocketAddress> RAW_DNS_SENDER_THREAD_LOCAL = new ThreadLocal<>();
+    private static final String SENDER_ATTRIBUTE_KEY = "rawSender";
 
     DnsProxyDatagramClient() {
         this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DnsProxyDatagramClient"));
@@ -34,7 +35,7 @@ class DnsProxyDatagramClient extends DnsProxyClient {
                     ch.pipeline()
                         .addLast(new QueryEncoder())
                         .addLast(new ResponseDecoder())
-                        .addLast(new DnsProxyClientHandler());
+                        .addLast(new ObtainMessageChannelHandler<>(DatagramDnsResponse.class));
                 }
             });
     }
@@ -48,15 +49,11 @@ class DnsProxyDatagramClient extends DnsProxyClient {
         }
         Channel channel = this.bootstrap.connect(nameServer).sync().channel();
         try {
-            channel.writeAndFlush(query.retain()).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        future.cause().printStackTrace();
-                    }
-                }
-            });
-            return channel.pipeline().get(DnsProxyClientHandler.class).getResponse();
+            channel.writeAndFlush(query.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            @SuppressWarnings("unchecked")
+            ObtainMessageChannelHandler<DatagramDnsResponse> obtainMessageChannelHandler =
+                (ObtainMessageChannelHandler<DatagramDnsResponse>) channel.pipeline().get(ObtainMessageChannelHandler.class);
+            return obtainMessageChannelHandler.getMessage();
         } finally {
             channel.close();
         }
@@ -64,28 +61,40 @@ class DnsProxyDatagramClient extends DnsProxyClient {
 
     @Override
     public void close() {
-        DnsProxyDatagramClient.RAW_DNS_SENDER_THREAD_LOCAL.remove();
         this.workerGroup.shutdownGracefully();
     }
 
+    @ChannelHandler.Sharable
     private static class QueryEncoder extends DatagramDnsQueryEncoder {
 
         @Override
-        protected void encode(ChannelHandlerContext ctx, AddressedEnvelope<DnsQuery, InetSocketAddress> in, List<Object> out) throws Exception {
-            DnsProxyDatagramClient.RAW_DNS_SENDER_THREAD_LOCAL.set(in.sender());
-            // TODO chose DNS server address
-            InetSocketAddress proxyRecipient = DnsServerAddressUtil.listRawDnsServerAddress().get(0);
-            AddressedEnvelopeAdapter queryProxy = new AddressedEnvelopeAdapter(in.sender(), proxyRecipient, in);
+        protected void encode(ChannelHandlerContext ctx,
+                              AddressedEnvelope<DnsQuery, InetSocketAddress> in, List<Object> out) throws Exception {
+            // save raw sender
+            final AttributeKey<InetSocketAddress> key = AttributeKey.valueOf(DnsProxyDatagramClient.SENDER_ATTRIBUTE_KEY);
+            ctx.channel().attr(key).set(in.sender());
+
+            // get DNS server address from channel
+            final InetSocketAddress recipient = (InetSocketAddress) ctx.channel().remoteAddress();
+
+            AddressedEnvelopeAdapter queryProxy = new AddressedEnvelopeAdapter(in.sender(), recipient, in);
             super.encode(ctx, queryProxy, out);
         }
     }
 
+    @ChannelHandler.Sharable
     private static class ResponseDecoder extends DatagramDnsResponseDecoder {
 
         @Override
         protected void decode(ChannelHandlerContext ctx, DatagramPacket packet, List<Object> out) throws Exception {
-            InetSocketAddress rawRecipient = DnsProxyDatagramClient.RAW_DNS_SENDER_THREAD_LOCAL.get();
-            DatagramPacket responseProxy = new DatagramPacket(packet.content(), rawRecipient, packet.sender());
+            // obtain raw sender, and it is the raw recipient in DnsResponse
+            final AttributeKey<InetSocketAddress> key = AttributeKey.valueOf(DnsProxyDatagramClient.SENDER_ATTRIBUTE_KEY);
+            final InetSocketAddress rawRecipient = ctx.channel().attr(key).get();
+
+            // get DNS server address from channel
+            final InetSocketAddress recipient = (InetSocketAddress) ctx.channel().remoteAddress();
+
+            DatagramPacket responseProxy = new DatagramPacket(packet.content(), rawRecipient, recipient);
             super.decode(ctx, responseProxy, out);
         }
     }
