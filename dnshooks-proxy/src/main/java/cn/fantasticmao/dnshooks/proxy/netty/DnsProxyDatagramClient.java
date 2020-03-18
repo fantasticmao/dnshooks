@@ -33,8 +33,8 @@ class DnsProxyDatagramClient extends DnsProxyClient {
                 @Override
                 protected void initChannel(NioDatagramChannel ch) throws Exception {
                     ch.pipeline()
-                        .addLast(new QueryEncoder())
-                        .addLast(new ResponseDecoder())
+                        .addLast(new ProxyQueryEncoder())
+                        .addLast(new ProxyResponseDecoder())
                         .addLast(new ObtainMessageChannelHandler<>(DatagramDnsResponse.class));
                 }
             });
@@ -65,7 +65,7 @@ class DnsProxyDatagramClient extends DnsProxyClient {
     }
 
     @ChannelHandler.Sharable
-    private static class QueryEncoder extends DatagramDnsQueryEncoder {
+    private static class ProxyQueryEncoder extends DatagramDnsQueryEncoder {
 
         @Override
         protected void encode(ChannelHandlerContext ctx,
@@ -83,7 +83,7 @@ class DnsProxyDatagramClient extends DnsProxyClient {
     }
 
     @ChannelHandler.Sharable
-    private static class ResponseDecoder extends DatagramDnsResponseDecoder {
+    private static class ProxyResponseDecoder extends DatagramDnsResponseDecoder {
 
         @Override
         protected void decode(ChannelHandlerContext ctx, DatagramPacket packet, List<Object> out) throws Exception {
