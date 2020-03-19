@@ -11,6 +11,33 @@
 
     <name>dnshooks-all</name>
     <url>https://github.com/FantasticMao/dnshooks</url>
+    <inceptionYear>2020</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>author</id>
+            <name>FantasticMao</name>
+            <email>maomao8017@gmail.com</email>
+        </developer>
+    </developers>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/FantasticMao/dnshooks/issues</url>
+    </issueManagement>
+
+    <ciManagement>
+        <system>GitHub Action</system>
+        <url>https://github.com/FantasticMao/dnshooks/actions</url>
+    </ciManagement>
 
     <properties>
         <java.version>1.8</java.version>

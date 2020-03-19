@@ -10,6 +10,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dnshooks-log2es</artifactId>
+
     <name>dnshooks-log2es</name>
     <description>DNS Hook: log DNS record message to Elasticsearch</description>
 

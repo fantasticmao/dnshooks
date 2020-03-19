@@ -10,7 +10,7 @@ DNSHooks-Proxy's inbound/outbound channel handler pipeline in Netty:
 +--------+                                                     +--------------------+
 |        | --> DatagramDnsQueryDecoder                         | +----------------+ |
 | DNS    |                     DnsProxyServerClientHandler --> | | DNSHooks Proxy | |
-| client |                                                     | | Server         | |
+| Client |                                                     | | Server         | |
 |        |                  DnsProxyServerDisruptorHandler <-- | +----------------+ |
 |        | <-- DatagramDnsResponseEncoder     |                |      A     |       |                                       +--------+
 +--------+                                    |                |      |     V       |                                       |        |

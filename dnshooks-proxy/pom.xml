@@ -11,6 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dnshooks-proxy</artifactId>
     <packaging>jar</packaging>
+
     <name>dnshooks-proxy</name>
     <description>A simple DNS proxy</description>
 
