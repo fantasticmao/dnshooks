@@ -12,7 +12,12 @@ import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -28,6 +33,8 @@ public class Main {
     private static final int RINGBUFFER_DEFAULT_SIZE = 256 * 1024;
 
     public static void main(String[] args) throws Exception {
+        printBanner();
+
         // use blocking wait strategy，avoid to cost a lot of CPU resources
         final WaitStrategy waitStrategy = new BlockingWaitStrategy();
         final Disruptor<DnsMessage> disruptor = new Disruptor<>(DnsMessageFactory.INSTANCE,
@@ -56,5 +63,11 @@ public class Main {
         List<DnsMessageHook> handlerList = new LinkedList<>();
         ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
         return handlerList;
+    }
+
+    private static void printBanner() throws URISyntaxException, IOException {
+        Path path = Paths.get(Main.class.getResource("/banner.txt").toURI());
+        byte[] bytes = Files.readAllBytes(path);
+        System.out.write(bytes);
     }
 }

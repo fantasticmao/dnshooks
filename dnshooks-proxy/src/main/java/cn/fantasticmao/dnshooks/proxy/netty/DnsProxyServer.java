@@ -55,6 +55,7 @@ public class DnsProxyServer implements AutoCloseable {
     @Override
     public void close() throws Exception {
         this.workerGroup.shutdownGracefully();
+        System.out.println("stop DNSHooks-Proxy success");
     }
 
 }
