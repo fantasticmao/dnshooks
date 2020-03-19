@@ -14,59 +14,59 @@ import java.net.InetSocketAddress;
  * @since 2020-03-12
  */
 @NotThreadSafe
-public class DnsMessage<Query extends DnsQuery, Response extends DnsResponse> {
+public class DnsMessage {
     /**
      * {@link DnsQuery} before DNSHooks Proxy
      */
-    private AddressedEnvelope<Query, InetSocketAddress> queryBefore;
+    private AddressedEnvelope<DnsQuery, InetSocketAddress> queryBefore;
 
     /**
      * {@link DnsQuery} after DNSHooks Proxy
      */
-    private AddressedEnvelope<Query, InetSocketAddress> queryAfter;
+    private AddressedEnvelope<DnsQuery, InetSocketAddress> queryAfter;
 
     /**
      * {@link DnsResponse} before DNSHooks Proxy
      */
-    private AddressedEnvelope<Response, InetSocketAddress> responseBefore;
+    private AddressedEnvelope<DnsResponse, InetSocketAddress> responseBefore;
 
     /**
      * {@link DnsResponse} after DNSHooks Proxy
      */
-    private AddressedEnvelope<Response, InetSocketAddress> responseAfter;
+    private AddressedEnvelope<DnsResponse, InetSocketAddress> responseAfter;
 
     public DnsMessage() {
     }
 
-    public AddressedEnvelope<Query, InetSocketAddress> getQueryBefore() {
+    public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryBefore() {
         return queryBefore;
     }
 
-    public void setQueryBefore(AddressedEnvelope<Query, InetSocketAddress> queryBefore) {
+    public void setQueryBefore(AddressedEnvelope<DnsQuery, InetSocketAddress> queryBefore) {
         this.queryBefore = queryBefore;
     }
 
-    public AddressedEnvelope<Query, InetSocketAddress> getQueryAfter() {
+    public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryAfter() {
         return queryAfter;
     }
 
-    public void setQueryAfter(AddressedEnvelope<Query, InetSocketAddress> queryAfter) {
+    public void setQueryAfter(AddressedEnvelope<DnsQuery, InetSocketAddress> queryAfter) {
         this.queryAfter = queryAfter;
     }
 
-    public AddressedEnvelope<Response, InetSocketAddress> getResponseBefore() {
+    public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseBefore() {
         return responseBefore;
     }
 
-    public void setResponseBefore(AddressedEnvelope<Response, InetSocketAddress> responseBefore) {
+    public void setResponseBefore(AddressedEnvelope<DnsResponse, InetSocketAddress> responseBefore) {
         this.responseBefore = responseBefore;
     }
 
-    public AddressedEnvelope<Response, InetSocketAddress> getResponseAfter() {
+    public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseAfter() {
         return responseAfter;
     }
 
-    public void setResponseAfter(AddressedEnvelope<Response, InetSocketAddress> responseAfter) {
+    public void setResponseAfter(AddressedEnvelope<DnsResponse, InetSocketAddress> responseAfter) {
         this.responseAfter = responseAfter;
     }
 }

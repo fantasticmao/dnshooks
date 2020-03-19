@@ -2,8 +2,6 @@ package cn.fantasticmao.dnshooks.proxy.hook;
 
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageHook;
-import io.netty.handler.codec.dns.DnsQuery;
-import io.netty.handler.codec.dns.DnsResponse;
 
 /**
  * DnsMessageHookRpc
@@ -19,7 +17,7 @@ public class DnsMessageHookRpc implements DnsMessageHook {
     }
 
     @Override
-    public void onEvent(DnsMessage<DnsQuery, DnsResponse> event, long sequence, boolean endOfBatch) throws Exception {
+    public void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception {
         // TODO implement default RPC hook
         throw new UnsupportedOperationException("TODO implement default RPC hook");
     }

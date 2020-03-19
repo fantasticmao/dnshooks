@@ -20,12 +20,12 @@ import java.util.List;
  * @since 2020-03-12
  */
 @Immutable
-class DnsProxyDatagramClient extends DnsProxyClient {
+public class DnsProxyDatagramClient extends DnsProxyClient {
     private final InetSocketAddress localAddress;
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
 
-    DnsProxyDatagramClient(@Nonnull final InetSocketAddress localAddress) {
+    public DnsProxyDatagramClient(@Nonnull final InetSocketAddress localAddress) {
         this.localAddress = localAddress;
         this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DnsProxyDatagramClient"));
         this.bootstrap = new Bootstrap()
@@ -47,8 +47,14 @@ class DnsProxyDatagramClient extends DnsProxyClient {
             });
     }
 
+    @Nonnull
     @Override
-    protected DnsResponse lookup(@Nonnull final InetSocketAddress nameServer, @Nonnull final DnsQuery query)
+    protected InetSocketAddress getLocalAddress() {
+        return this.localAddress;
+    }
+
+    @Override
+    protected Triplet lookup(@Nonnull final InetSocketAddress nameServer, @Nonnull final DnsQuery query)
         throws InterruptedException {
         if (!(query instanceof DatagramDnsQuery)) {
             throw new IllegalArgumentException(query.getClass().getName() + "cannot case to "
@@ -59,15 +65,16 @@ class DnsProxyDatagramClient extends DnsProxyClient {
             channel.writeAndFlush(query.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             @SuppressWarnings("unchecked")
             ObtainMessageChannelHandler<DatagramDnsResponse> obtainMessageChannelHandler =
-                (ObtainMessageChannelHandler<DatagramDnsResponse>) channel.pipeline().get(ObtainMessageChannelHandler.class);
-            return obtainMessageChannelHandler.getMessage();
+                channel.pipeline().get(ObtainMessageChannelHandler.class);
+            DatagramDnsResponse responseAfter = obtainMessageChannelHandler.getMessage();
+            return new Triplet(null, null, responseAfter);
         } finally {
             channel.close();
         }
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
         this.workerGroup.shutdownGracefully();
     }
 
@@ -91,6 +98,10 @@ class DnsProxyDatagramClient extends DnsProxyClient {
             final InetSocketAddress recipient = (InetSocketAddress) ctx.channel().remoteAddress();
 
             AddressedEnvelopeAdapter queryProxy = new AddressedEnvelopeAdapter(null, recipient, in);
+
+            // save query after DNSHooks proxy
+            ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).set(queryProxy);
+
             System.out.printf("queryAfter from: %s to: %s%n", queryProxy.sender(), queryProxy.recipient());
             super.encode(ctx, queryProxy, out);
         }

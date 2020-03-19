@@ -3,15 +3,13 @@ package cn.fantasticmao.dnshooks.proxy.netty;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageTranslator;
 import com.lmax.disruptor.dsl.Disruptor;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
+import java.net.InetSocketAddress;
 
 /**
  * DnsProxyServerDisruptorHandler
@@ -22,9 +20,9 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 @ChannelHandler.Sharable
 class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
-    private final Disruptor<DnsMessage<DnsQuery, DnsResponse>> disruptor;
+    private final Disruptor<DnsMessage> disruptor;
 
-    public DnsProxyServerDisruptorHandler(@Nonnull Disruptor<DnsMessage<DnsQuery, DnsResponse>> disruptor) {
+    DnsProxyServerDisruptorHandler(@Nonnull Disruptor<DnsMessage> disruptor) {
         this.disruptor = disruptor;
     }
 
@@ -32,10 +30,19 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
     public void write(ChannelHandlerContext ctx, Object responseAfter, ChannelPromise promise) throws Exception {
         try {
             // obtain query before DNSHooks proxy
-            final DnsQuery queryBefore = ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).get();
+            final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryBefore
+                = ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).get();
+
+            // obtain query after DNSHooks proxy
+            final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter
+                = ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).get();
+
+            // obtain response before DNSHooks proxy
+            final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore
+                = ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
 
             this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
-                queryBefore, null, null, responseAfter);
+                queryBefore, queryAfter, responseBefore, responseAfter);
         } finally {
             ctx.writeAndFlush(responseAfter, promise);
         }

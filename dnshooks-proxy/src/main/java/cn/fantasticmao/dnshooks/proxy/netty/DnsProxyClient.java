@@ -6,6 +6,7 @@ import io.netty.handler.codec.dns.DnsResponse;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.net.InetSocketAddress;
 
@@ -15,10 +16,13 @@ import java.net.InetSocketAddress;
  * @author maomao
  * @since 2020-03-12
  */
-abstract class DnsProxyClient implements AutoCloseable {
+public abstract class DnsProxyClient implements AutoCloseable {
 
-    protected abstract DnsResponse lookup(@Nonnull final InetSocketAddress nameServer,
-                                          @Nonnull final DnsQuery query) throws Exception;
+    @Nonnull
+    protected abstract InetSocketAddress getLocalAddress();
+
+    protected abstract Triplet lookup(@Nonnull final InetSocketAddress nameServer,
+                                      @Nonnull final DnsQuery query) throws Exception;
 
     protected interface ProxyQueryEncoder {
 
@@ -28,9 +32,23 @@ abstract class DnsProxyClient implements AutoCloseable {
 
     }
 
+    @Immutable
+    static final class Triplet {
+        final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter;
+        final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore;
+        final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseAfter;
+
+        public Triplet(AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter,
+                       AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore,
+                       AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseAfter) {
+            this.queryAfter = queryAfter;
+            this.responseBefore = responseBefore;
+            this.responseAfter = responseAfter;
+        }
+    }
+
     @NotThreadSafe
-    protected static final class AddressedEnvelopeAdapter
-        implements AddressedEnvelope<DnsQuery, InetSocketAddress> {
+    static final class AddressedEnvelopeAdapter implements AddressedEnvelope<DnsQuery, InetSocketAddress> {
         private final InetSocketAddress sender;
         private final InetSocketAddress recipient;
         private final AddressedEnvelope<DnsQuery, InetSocketAddress> in;
