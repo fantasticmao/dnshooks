@@ -24,6 +24,7 @@ public class DnsProxyDatagramClientTest {
             return;
         }
 
+        final InetSocketAddress localAddress = new InetSocketAddress(53);
         final InetSocketAddress dnsServerAddress = dnsServerAddressList.get(0);
         final int id = idGenerator.nextInt(Short.MAX_VALUE);
         System.out.println("Transaction ID: " + id);
@@ -31,7 +32,7 @@ public class DnsProxyDatagramClientTest {
         final DatagramDnsQuery dnsQuery = new DatagramDnsQuery(null, dnsServerAddress, id);
         dnsQuery.addRecord(DnsSection.QUESTION, new DefaultDnsQuestion("fantasticmao.cn", DnsRecordType.A));
 
-        try (DnsProxyDatagramClient client = new DnsProxyDatagramClient()) {
+        try (DnsProxyDatagramClient client = new DnsProxyDatagramClient(localAddress)) {
             DnsResponse response = client.lookup(dnsServerAddress, dnsQuery);
             Assert.assertNotNull(response);
             System.out.println("DnsResponse: " + response.toString());

@@ -1,6 +1,8 @@
 package cn.fantasticmao.dnshooks.proxy.disruptor;
 
 import com.lmax.disruptor.EventHandler;
+import io.netty.handler.codec.dns.DnsQuery;
+import io.netty.handler.codec.dns.DnsResponse;
 
 /**
  * DnsMessageHook
@@ -8,7 +10,7 @@ import com.lmax.disruptor.EventHandler;
  * @author maomao
  * @since 2020-03-15
  */
-public interface DnsMessageHook extends EventHandler<DnsMessage> {
+public interface DnsMessageHook extends EventHandler<DnsMessage<DnsQuery, DnsResponse>> {
 
     /**
      * define the hook name
@@ -20,5 +22,5 @@ public interface DnsMessageHook extends EventHandler<DnsMessage> {
     /**
      * {@inheritDoc}
      */
-    void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception;
+    void onEvent(DnsMessage<DnsQuery, DnsResponse> event, long sequence, boolean endOfBatch) throws Exception;
 }

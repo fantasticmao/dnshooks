@@ -4,6 +4,9 @@ import io.netty.channel.AddressedEnvelope;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 import java.net.InetSocketAddress;
 
 /**
@@ -14,17 +17,26 @@ import java.net.InetSocketAddress;
  */
 abstract class DnsProxyClient implements AutoCloseable {
 
-    protected abstract DnsResponse lookup(final InetSocketAddress nameServer, final DnsQuery query)
-        throws Exception;
+    protected abstract DnsResponse lookup(@Nonnull final InetSocketAddress nameServer,
+                                          @Nonnull final DnsQuery query) throws Exception;
 
+    protected interface ProxyQueryEncoder {
+
+    }
+
+    protected interface ProxyResponseDecoder {
+
+    }
+
+    @NotThreadSafe
     protected static final class AddressedEnvelopeAdapter
         implements AddressedEnvelope<DnsQuery, InetSocketAddress> {
         private final InetSocketAddress sender;
         private final InetSocketAddress recipient;
         private final AddressedEnvelope<DnsQuery, InetSocketAddress> in;
 
-        AddressedEnvelopeAdapter(InetSocketAddress sender, InetSocketAddress recipient,
-                                 AddressedEnvelope<DnsQuery, InetSocketAddress> in) {
+        AddressedEnvelopeAdapter(@Nullable InetSocketAddress sender, @Nullable InetSocketAddress recipient,
+                                 @Nonnull AddressedEnvelope<DnsQuery, InetSocketAddress> in) {
             this.sender = sender;
             this.recipient = recipient;
             this.in = in;

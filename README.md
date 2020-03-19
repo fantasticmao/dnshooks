@@ -1,8 +1,34 @@
-# DnsHooks [![Actions Status](https://github.com/FantasticMao/dnshooks/workflows/action/badge.svg)](https://github.com/FantasticMao/dnshooks/actions) [![image](https://img.shields.io/badge/license-GPL3.0-green.svg)](https://github.com/FantasticMao/dnshooks/blob/master/LICENSE)
+# DNSHooks [![Actions Status](https://github.com/FantasticMao/dnshooks/workflows/action/badge.svg)](https://github.com/FantasticMao/dnshooks/actions) [![image](https://img.shields.io/badge/license-GPL3.0-green.svg)](https://github.com/FantasticMao/dnshooks/blob/master/LICENSE)
 
 A simple DNS proxy, with support for some hooks (such as webhooks).
 
-## RFC Reference
+## DNSHooks-Proxy
+
+DNSHooks-Proxy's inbound/outbound channel handler pipeline in Netty:
+
+```text
++--------+                                                     +--------------------+
+|        | --> DatagramDnsQueryDecoder                         | +----------------+ |
+| DNS    |                     DnsProxyServerClientHandler --> | | DNSHooks Proxy | |
+| client |                                                     | | Server         | |
+|        |                  DnsProxyServerDisruptorHandler <-- | +----------------+ |
+|        | <-- DatagramDnsResponseEncoder     |                |      A     |       |                                       +--------+
++--------+                                    |                |      |     V       |                                       |        |
+                                              |                | +----------------+ | --> ProxyQueryEncoder --------------> | DNS    |
+                                              |                | | DNSHooks Proxy | |                                       | Server |
+                                              V                | | Client         | |              ProxyResponseDecoder <-- |        |
+                                       +-------------+         | +----------------+ | <-- ObtainMessageChannelHandler       |        |
+                                      /             /|         +--------------------+                                       +--------+
+                                     +-------------+ |
+                                     | Disruptor   | |
+                                     | Ring Buffer |/
+                                     +-------------+
+                                        |   |   |
+                                        V   V   V
+                                      Hook Hook Hook
+```
+
+## DNS Related RFC
 
 -   RFC 1034 [Domain Names - Concepts And Facilities](https://tools.ietf.org/html/rfc1034)
 -   RFC 1035 [Domain Names - Implementation And Specification](https://tools.ietf.org/html/rfc1035)

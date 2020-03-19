@@ -3,6 +3,7 @@ package cn.fantasticmao.dnshooks.proxy.netty;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -15,9 +16,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
     private final BlockingQueue<T> answer;
 
-    ObtainMessageChannelHandler(Class<? extends T> inboundMessageType) {
+    ObtainMessageChannelHandler(@Nonnull Class<? extends T> inboundMessageType) {
         super(inboundMessageType, false);
-        // notice: LinkedBlockingQueue may cause OutOfMemoryError
+        // Notice: LinkedBlockingQueue may cause OutOfMemoryError
         this.answer = new LinkedBlockingQueue<>();
     }
 

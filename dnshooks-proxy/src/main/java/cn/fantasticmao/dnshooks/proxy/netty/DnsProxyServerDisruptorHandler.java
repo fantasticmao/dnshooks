@@ -8,7 +8,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.dns.DnsQuery;
-import io.netty.util.AttributeKey;
+import io.netty.handler.codec.dns.DnsResponse;
+
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * DnsProxyServerDisruptorHandler
@@ -16,22 +19,25 @@ import io.netty.util.AttributeKey;
  * @author maomao
  * @since 2020-03-17
  */
+@Immutable
 @ChannelHandler.Sharable
-public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
-    private final Disruptor<DnsMessage> disruptor;
+class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
+    private final Disruptor<DnsMessage<DnsQuery, DnsResponse>> disruptor;
 
-    public DnsProxyServerDisruptorHandler(Disruptor<DnsMessage> disruptor) {
+    public DnsProxyServerDisruptorHandler(@Nonnull Disruptor<DnsMessage<DnsQuery, DnsResponse>> disruptor) {
         this.disruptor = disruptor;
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object response, ChannelPromise promise) throws Exception {
+    public void write(ChannelHandlerContext ctx, Object responseAfter, ChannelPromise promise) throws Exception {
         try {
-            final AttributeKey<DnsQuery> key = AttributeKey.valueOf(DnsProxyServerClientHandler.QUERY_ATTRIBUTE_KEY);
-            final DnsQuery query = ctx.channel().attr(key).get();
-            this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE, query, response);
+            // obtain query before DNSHooks proxy
+            final DnsQuery queryBefore = ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).get();
+
+            this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
+                queryBefore, null, null, responseAfter);
         } finally {
-            ctx.writeAndFlush(response, promise);
+            ctx.writeAndFlush(responseAfter, promise);
         }
     }
 }

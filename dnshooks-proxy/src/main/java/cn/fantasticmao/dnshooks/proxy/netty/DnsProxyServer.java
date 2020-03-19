@@ -14,8 +14,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.dns.DatagramDnsQueryDecoder;
 import io.netty.handler.codec.dns.DatagramDnsResponseEncoder;
+import io.netty.handler.codec.dns.DnsQuery;
+import io.netty.handler.codec.dns.DnsResponse;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import jdk.nashorn.internal.ir.annotations.Immutable;
 
+import javax.annotation.Nonnegative;
+import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -27,34 +32,33 @@ import java.util.concurrent.TimeUnit;
  * @author maomao
  * @since 2020-03-11
  */
+@Immutable
 public class DnsProxyServer implements AutoCloseable {
-    private final Disruptor<DnsMessage> disruptor;
+    private final Disruptor<DnsMessage<DnsQuery, DnsResponse>> disruptor;
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
     private final DnsProxyClient proxyClient;
 
-    public DnsProxyServer(int ringBufferSize) {
+    public DnsProxyServer(@Nonnegative int ringBufferSize) {
         // use blocking wait strategy，avoid to cost a lot of CPU resources
         final WaitStrategy waitStrategy = new BlockingWaitStrategy();
         this.disruptor = new Disruptor<>(DnsMessageFactory.INSTANCE, ringBufferSize,
             HookThreadFactory.INSTANCE, ProducerType.MULTI, waitStrategy);
-        // use ServiceLoader to find all DNS hooks
-        List<DnsMessageHook> handlerList = new LinkedList<>();
-        ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
         // register all DNS hooks as event handler to Disruptor
-        this.disruptor.handleEventsWith(handlerList.toArray(new DnsMessageHook[0]));
+        this.disruptor.handleEventsWith(this.loadHooks().toArray(new DnsMessageHook[0]));
         // start Disruptor
         this.disruptor.start();
 
+        final InetSocketAddress localAddress = new InetSocketAddress(53);
         // new DnsProxyClient instance
-        this.proxyClient = new DnsProxyDatagramClient();
+        this.proxyClient = new DnsProxyDatagramClient(localAddress);
 
         // config netty Bootstrap
         this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DnsProxyServer"));
         this.bootstrap = new Bootstrap()
             .group(workerGroup)
             .channel(NioDatagramChannel.class)
-            .localAddress(53)
+            .localAddress(localAddress)
             .option(ChannelOption.SO_BROADCAST, true)
             .handler(new ChannelInitializer<NioDatagramChannel>() {
                 @Override
@@ -86,5 +90,16 @@ public class DnsProxyServer implements AutoCloseable {
         this.proxyClient.close();
         this.disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
         this.workerGroup.shutdownGracefully();
+    }
+
+    /**
+     * use ServiceLoader to find all DNS hooks
+     *
+     * @return {@link DnsMessageHook} list
+     */
+    private List<DnsMessageHook> loadHooks() {
+        List<DnsMessageHook> handlerList = new LinkedList<>();
+        ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
+        return handlerList;
     }
 }

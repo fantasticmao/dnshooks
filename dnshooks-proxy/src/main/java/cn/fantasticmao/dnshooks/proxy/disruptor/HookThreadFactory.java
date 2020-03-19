@@ -1,5 +1,6 @@
 package cn.fantasticmao.dnshooks.proxy.disruptor;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,7 +16,7 @@ public enum HookThreadFactory implements ThreadFactory {
     private static AtomicInteger count = new AtomicInteger(0);
 
     @Override
-    public Thread newThread(Runnable runnable) {
+    public Thread newThread(@Nonnull Runnable runnable) {
         String threadName = "DNSHooks-Processor-" + count.incrementAndGet();
         Thread thread = new Thread(runnable, threadName);
         thread.setDaemon(true);
