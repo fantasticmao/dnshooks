@@ -21,6 +21,7 @@ public abstract class DnsProxyClient implements AutoCloseable {
     @Nonnull
     protected abstract InetSocketAddress getLocalAddress();
 
+    @Nonnull
     protected abstract Triplet lookup(@Nonnull final InetSocketAddress nameServer,
                                       @Nonnull final DnsQuery query) throws Exception;
 
