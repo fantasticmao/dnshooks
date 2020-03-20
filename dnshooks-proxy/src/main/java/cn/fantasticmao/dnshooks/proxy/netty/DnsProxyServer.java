@@ -10,6 +10,8 @@ import io.netty.handler.codec.dns.DatagramDnsQueryDecoder;
 import io.netty.handler.codec.dns.DatagramDnsResponseEncoder;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import jdk.nashorn.internal.ir.annotations.Immutable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -22,6 +24,8 @@ import javax.annotation.Nonnull;
  */
 @Immutable
 public class DnsProxyServer implements AutoCloseable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DnsProxyServer.class);
+
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
 
@@ -48,14 +52,14 @@ public class DnsProxyServer implements AutoCloseable {
 
     public void run() throws Exception {
         ChannelFuture future = this.bootstrap.bind().sync();
-        System.out.println("start DNSHooks-Proxy success");
+        LOGGER.info("start DNSHooks-Proxy success");
         future.channel().closeFuture().sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     @Override
     public void close() throws Exception {
         this.workerGroup.shutdownGracefully();
-        System.out.println("stop DNSHooks-Proxy success");
+        LOGGER.info("stop DNSHooks-Proxy success");
     }
 
 }

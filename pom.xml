@@ -50,6 +50,7 @@
         <findbugs.version>3.0.2</findbugs.version>
         <netty.version>4.1.47.Final</netty.version>
         <disruptor.version>3.4.2</disruptor.version>
+        <elasticsearch.version>7.6.1</elasticsearch.version>
         <log4j.version>2.13.1</log4j.version>
     </properties>
 
@@ -121,6 +122,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>jsr305</artifactId>
                 <version>${findbugs.version}</version>
@@ -140,9 +147,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j.version}</version>
+                <groupId>org.elasticsearch.client</groupId>
+                <artifactId>elasticsearch-rest-high-level-client</artifactId>
+                <version>${elasticsearch.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

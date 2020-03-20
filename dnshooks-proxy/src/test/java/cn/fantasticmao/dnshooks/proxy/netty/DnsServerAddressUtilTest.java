@@ -1,6 +1,8 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -12,10 +14,13 @@ import java.util.List;
  * @since 2020-03-16
  */
 public class DnsServerAddressUtilTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DnsServerAddressUtilTest.class);
 
     @Test
     public void listRawDnsServerAddress() {
         List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
-        dnsServerAddressList.forEach(System.out::println);
+        dnsServerAddressList.stream()
+            .map(InetSocketAddress::toString)
+            .forEach(LOGGER::info);
     }
 }

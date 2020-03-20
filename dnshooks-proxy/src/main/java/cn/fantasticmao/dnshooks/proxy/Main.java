@@ -7,6 +7,7 @@ import cn.fantasticmao.dnshooks.proxy.disruptor.HookThreadFactory;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyClient;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyDatagramClient;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyServer;
+import cn.fantasticmao.dnshooks.proxy.util.Constant;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
@@ -22,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * Main
@@ -30,7 +32,6 @@ import java.util.concurrent.TimeUnit;
  * @since 2020-03-11
  */
 public class Main {
-    private static final int RINGBUFFER_DEFAULT_SIZE = 256 * 1024;
 
     public static void main(String[] args) throws Exception {
         printBanner();
@@ -38,7 +39,7 @@ public class Main {
         // use blocking wait strategy，avoid to cost a lot of CPU resources
         final WaitStrategy waitStrategy = new BlockingWaitStrategy();
         final Disruptor<DnsMessage> disruptor = new Disruptor<>(DnsMessageFactory.INSTANCE,
-            RINGBUFFER_DEFAULT_SIZE, HookThreadFactory.INSTANCE, ProducerType.MULTI, waitStrategy);
+            Constant.RINGBUFFER_SIZE, HookThreadFactory.INSTANCE, ProducerType.MULTI, waitStrategy);
         // register all DNS hooks as event handler to Disruptor
         DnsMessageHook[] handlers = loadHooks().toArray(new DnsMessageHook[0]);
         disruptor.handleEventsWith(handlers);
@@ -51,6 +52,7 @@ public class Main {
             server.run();
         } finally {
             disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
+            Stream.of(handlers).forEach(DnsMessageHook::close);
         }
     }
 

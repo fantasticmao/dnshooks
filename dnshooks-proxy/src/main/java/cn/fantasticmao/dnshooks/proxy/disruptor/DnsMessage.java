@@ -8,8 +8,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.net.InetSocketAddress;
 
 /**
- * represent the messages in DNSHooks Proxy's workflow, will contains the raw {@link DnsQuery} and
- * {@link DnsResponse} DNS messages.
+ * Messages in DNSHooks Proxy's workflow, will contains the raw {@link DnsQuery} and {@link DnsResponse} DNS messages.
  * <p>
  * DNSHooks Proxy's workflow is as flow:
  * <pre>

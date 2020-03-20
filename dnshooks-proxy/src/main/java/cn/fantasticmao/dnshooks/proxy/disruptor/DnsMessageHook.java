@@ -8,7 +8,7 @@ import com.lmax.disruptor.EventHandler;
  * @author maomao
  * @since 2020-03-15
  */
-public interface DnsMessageHook extends EventHandler<DnsMessage> {
+public interface DnsMessageHook extends EventHandler<DnsMessage>, AutoCloseable {
 
     /**
      * define the hook name
@@ -21,4 +21,9 @@ public interface DnsMessageHook extends EventHandler<DnsMessage> {
      * {@inheritDoc}
      */
     void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception;
+
+    @Override
+    default void close() {
+        // adapter for AutoCloseable
+    }
 }
