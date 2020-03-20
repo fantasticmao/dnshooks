@@ -62,6 +62,12 @@ public abstract class DnsProxyClient implements AutoCloseable {
         }
 
         @Override
+        public String toString() {
+            return String.format("AddressedEnvelopeAdapter(from: %s, to: %s, content: %s)",
+                sender, recipient, in.content());
+        }
+
+        @Override
         public DnsQuery content() {
             return in.content();
         }

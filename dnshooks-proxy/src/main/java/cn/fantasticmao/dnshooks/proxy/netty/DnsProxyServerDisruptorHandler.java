@@ -6,6 +6,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.channel.*;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
+import io.netty.util.ReferenceCountUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
@@ -41,8 +42,15 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
             final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore
                 = ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
 
-            this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
-                queryBefore, queryAfter, responseBefore, responseAfter);
+            try {
+                this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
+                    queryBefore, queryAfter, responseBefore, responseAfter);
+            } finally {
+                ReferenceCountUtil.release(queryBefore);
+                // queryAfter doesn't need to release
+                //ReferenceCountUtil.release(queryAfter);
+                ReferenceCountUtil.release(responseBefore);
+            }
         } finally {
             ctx.writeAndFlush(responseAfter, promise);
         }

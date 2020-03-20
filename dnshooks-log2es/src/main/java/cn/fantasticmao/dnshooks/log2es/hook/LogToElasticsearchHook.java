@@ -1,4 +1,4 @@
-package cn.fantasticmao.dnshook.log2es.hook;
+package cn.fantasticmao.dnshooks.log2es.hook;
 
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageHook;
@@ -8,16 +8,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * DnsMessageHookLogToElasticsearch
+ * LogToElasticsearchHook
  *
  * @author maomao
  * @since 2020-03-12
  */
-public class DnsMessageHookLogToElasticsearch implements DnsMessageHook {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DnsMessageHookLogToElasticsearch.class);
+public class LogToElasticsearchHook implements DnsMessageHook {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogToElasticsearchHook.class);
 
     @Override
-
     public String name() {
         return "Log To Elasticsearch";
     }

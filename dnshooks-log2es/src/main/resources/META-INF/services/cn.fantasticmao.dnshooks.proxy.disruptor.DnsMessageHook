@@ -1,1 +1,1 @@
-cn.fantasticmao.dnshook.log2es.hook.DnsMessageHookLogToElasticsearch
+cn.fantasticmao.dnshooks.log2es.hook.LogToElasticsearchHook

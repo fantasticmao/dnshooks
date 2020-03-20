@@ -1,4 +1,4 @@
-package cn.fantasticmao.dnshook.log2es.logger;
+package cn.fantasticmao.dnshooks.log2es.logger;
 
 /**
  * ElasticsearchAppender

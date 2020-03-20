@@ -1,4 +1,4 @@
-package cn.fantasticmao.dnshook.log2es;
+package cn.fantasticmao.dnshooks.log2es;
 
 import cn.fantasticmao.dnshooks.proxy.Main;
 
