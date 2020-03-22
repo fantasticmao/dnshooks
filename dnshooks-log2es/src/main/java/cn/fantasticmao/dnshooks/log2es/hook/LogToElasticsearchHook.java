@@ -11,8 +11,7 @@ import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.handler.codec.dns.DnsResponse;
 import io.netty.handler.codec.dns.DnsSection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,8 +22,8 @@ import java.net.InetSocketAddress;
  * @author maomao
  * @since 2020-03-12
  */
+@Slf4j
 public class LogToElasticsearchHook implements DnsMessageHook {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LogToElasticsearchHook.class);
     private MessageService service;
 
     public LogToElasticsearchHook() {
@@ -32,10 +31,10 @@ public class LogToElasticsearchHook implements DnsMessageHook {
         try {
             boolean result = this.service.createIfNotExists();
             if (!result) {
-                LOGGER.warn("create if not exists {} fail", Constant.INDEX_NAME);
+                log.warn("create if not exists {} fail", Constant.INDEX_NAME);
             }
         } catch (IOException e) {
-            LOGGER.error("create if not exists " + Constant.INDEX_NAME + " error", e);
+            log.error("create if not exists " + Constant.INDEX_NAME + " error", e);
         }
     }
 
@@ -55,22 +54,18 @@ public class LogToElasticsearchHook implements DnsMessageHook {
             try {
                 boolean result = service.save(message);
                 if (!result) {
-                    LOGGER.warn("save message {} to {} fail", message, Constant.INDEX_NAME);
+                    log.warn("save message {} to {} fail", message, Constant.INDEX_NAME);
                 }
             } catch (IOException e) {
-                LOGGER.error("save message " + message + " to " + Constant.INDEX_NAME + " error", e);
+                log.error("save message " + message + " to " + Constant.INDEX_NAME + " error", e);
             }
         } else {
-            LOGGER.warn("dns query queries count less than 1: {}", queryBefore);
+            log.warn("dns query queries count less than 1: {}", queryBefore);
         }
     }
 
     @Override
-    public void close() {
-        try {
-            service.close();
-        } catch (Exception e) {
-            LOGGER.error("close DnsMessageHook " + name() + " error", e);
-        }
+    public void close() throws Exception {
+        service.close();
     }
 }

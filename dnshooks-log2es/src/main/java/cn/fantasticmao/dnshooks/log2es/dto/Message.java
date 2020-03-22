@@ -1,5 +1,7 @@
 package cn.fantasticmao.dnshooks.log2es.dto;
 
+import lombok.*;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -8,50 +10,17 @@ import java.net.InetSocketAddress;
  * @author maomao
  * @since 2020-03-21
  */
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class Message {
+    public static final String FIELD_SEND = "send";
+    public static final String FIELD_RECIPIENT = "recipient";
+    public static final String FIELD_DOMAIN = "domain";
+
     private InetSocketAddress send;
     private InetSocketAddress recipient;
-    private String queryDomain;
-
-    public Message() {
-    }
-
-    public Message(InetSocketAddress send, InetSocketAddress recipient, String queryDomain) {
-        this.send = send;
-        this.recipient = recipient;
-        this.queryDomain = queryDomain;
-    }
-
-    public InetSocketAddress getSend() {
-        return send;
-    }
-
-    public void setSend(InetSocketAddress send) {
-        this.send = send;
-    }
-
-    public InetSocketAddress getRecipient() {
-        return recipient;
-    }
-
-    public void setRecipient(InetSocketAddress recipient) {
-        this.recipient = recipient;
-    }
-
-    public String getQueryDomain() {
-        return queryDomain;
-    }
-
-    public void setQueryDomain(String queryDomain) {
-        this.queryDomain = queryDomain;
-    }
-
-    @Override
-    public String toString() {
-        return "Message{" +
-            "send=" + send +
-            ", recipient=" + recipient +
-            ", queryDomain='" + queryDomain + '\'' +
-            '}';
-    }
+    private String domain;
 }

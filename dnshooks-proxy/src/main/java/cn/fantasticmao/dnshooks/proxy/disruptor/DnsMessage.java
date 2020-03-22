@@ -4,6 +4,8 @@ import io.netty.channel.AddressedEnvelope;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.net.InetSocketAddress;
 
@@ -48,6 +50,7 @@ public class DnsMessage {
     public DnsMessage() {
     }
 
+    @Nonnull
     public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryBefore() {
         return queryBefore;
     }
@@ -56,6 +59,7 @@ public class DnsMessage {
         this.queryBefore = queryBefore;
     }
 
+    @Nullable
     public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryAfter() {
         return queryAfter;
     }
@@ -64,6 +68,7 @@ public class DnsMessage {
         this.queryAfter = queryAfter;
     }
 
+    @Nullable
     public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseBefore() {
         return responseBefore;
     }
@@ -72,6 +77,7 @@ public class DnsMessage {
         this.responseBefore = responseBefore;
     }
 
+    @Nonnull
     public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseAfter() {
         return responseAfter;
     }

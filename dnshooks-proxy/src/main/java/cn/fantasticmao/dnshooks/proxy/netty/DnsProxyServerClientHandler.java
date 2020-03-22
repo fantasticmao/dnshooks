@@ -1,11 +1,9 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.codec.dns.DatagramDnsQuery;
 import io.netty.handler.codec.dns.DnsQuery;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
@@ -18,6 +16,7 @@ import java.util.List;
  * @author maomao
  * @since 2020-03-17
  */
+@Slf4j
 @Immutable
 @ChannelHandler.Sharable
 class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<DnsQuery> {
@@ -32,7 +31,8 @@ class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<DnsQuery> 
     public void channelRead0(ChannelHandlerContext ctx, DnsQuery query) throws Exception {
         // save query before DNSHooks proxy
         if (query instanceof DatagramDnsQuery) {
-            ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).set((DatagramDnsQuery) query);
+            DatagramDnsQuery dnsQuery = (DatagramDnsQuery) query;
+            ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).set(dnsQuery);
         } else {
             // TODO adapter tcp DnsQuery
         }
@@ -46,12 +46,23 @@ class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<DnsQuery> 
         ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).set(triplet.responseBefore);
 
         // send response after DNSHooks proxy to next channel handler
-        ctx.pipeline().write(triplet.responseAfter).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        ctx.channel().write(triplet.responseAfter);
     }
 
-    private DnsProxyClient.Triplet proxy(@Nonnull DnsQuery query) throws Exception {
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.error("read query error", cause);
+        ctx.channel().writeAndFlush(ErrorResponseConstant.UDP.DEFAULT);
+    }
+
+    private DnsProxyClient.Triplet proxy(@Nonnull DnsQuery query) {
         // TODO filter 127.0.0.1:53 && chose DNS server address
-        List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
-        return client.lookup(dnsServerAddressList.get(0), query);
+        try {
+            List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
+            return client.lookup(dnsServerAddressList.get(0), query);
+        } catch (Exception e) {
+            log.error("proxy request error", e);
+            return new DnsProxyClient.Triplet(null, null, ErrorResponseConstant.UDP.DEFAULT);
+        }
     }
 }

@@ -7,6 +7,7 @@ import io.netty.channel.*;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
 import io.netty.util.ReferenceCountUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
@@ -18,6 +19,7 @@ import java.net.InetSocketAddress;
  * @author maomao
  * @since 2020-03-17
  */
+@Slf4j
 @Immutable
 @ChannelHandler.Sharable
 class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
@@ -43,8 +45,11 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
                 = ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
 
             try {
-                this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
+                boolean result = this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
                     queryBefore, queryAfter, responseBefore, responseAfter);
+                if (!result) {
+                    log.warn("publish Disruptor event error");
+                }
             } finally {
                 ReferenceCountUtil.release(queryBefore);
                 // queryAfter doesn't need to release
@@ -52,7 +57,15 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
                 ReferenceCountUtil.release(responseBefore);
             }
         } finally {
-            ctx.writeAndFlush(responseAfter, promise);
+            ctx.writeAndFlush(responseAfter, promise).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        log.error("write response error", future.cause());
+                        future.channel().writeAndFlush(ErrorResponseConstant.UDP.DEFAULT);
+                    }
+                }
+            });
         }
     }
 }

@@ -10,8 +10,7 @@ import io.netty.handler.codec.dns.DatagramDnsQueryDecoder;
 import io.netty.handler.codec.dns.DatagramDnsResponseEncoder;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import jdk.nashorn.internal.ir.annotations.Immutable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -22,10 +21,9 @@ import javax.annotation.Nonnull;
  * @author maomao
  * @since 2020-03-11
  */
+@Slf4j
 @Immutable
 public class DnsProxyServer implements AutoCloseable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DnsProxyServer.class);
-
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
 
@@ -51,15 +49,32 @@ public class DnsProxyServer implements AutoCloseable {
     }
 
     public void run() throws Exception {
-        ChannelFuture future = this.bootstrap.bind().sync();
-        LOGGER.info("start DNSHooks-Proxy success");
-        future.channel().closeFuture().sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        final Channel channel = this.bootstrap.bind().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess()) {
+                    log.info("start DNSHooks-Proxy success");
+                } else {
+                    log.error("start DNSHooks-Proxy error", future.cause());
+                }
+            }
+        }).sync().channel();
+
+        channel.closeFuture().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess()) {
+                    log.info("stop DNSHooks-Proxy success");
+                } else {
+                    log.error("stop DNSHooks-Proxy error", future.cause());
+                }
+            }
+        });
     }
 
     @Override
     public void close() throws Exception {
         this.workerGroup.shutdownGracefully();
-        LOGGER.info("stop DNSHooks-Proxy success");
     }
 
 }

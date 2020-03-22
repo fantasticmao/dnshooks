@@ -1,9 +1,6 @@
 package cn.fantasticmao.dnshooks.proxy;
 
-import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
-import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageFactory;
-import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageHook;
-import cn.fantasticmao.dnshooks.proxy.disruptor.HookThreadFactory;
+import cn.fantasticmao.dnshooks.proxy.disruptor.*;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyClient;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyDatagramClient;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyServer;
@@ -12,6 +9,7 @@ import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,7 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 /**
  * Main
@@ -31,6 +28,7 @@ import java.util.stream.Stream;
  * @author maomao
  * @since 2020-03-11
  */
+@Slf4j
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -43,17 +41,30 @@ public class Main {
         // register all DNS hooks as event handler to Disruptor
         DnsMessageHook[] handlers = loadHooks().toArray(new DnsMessageHook[0]);
         disruptor.handleEventsWith(handlers);
+        disruptor.setDefaultExceptionHandler(new DnsMessageExceptionHandler());
         // start Disruptor
         disruptor.start();
 
         final InetSocketAddress localAddress = new InetSocketAddress(53);
-        try (DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
-             DnsProxyServer server = new DnsProxyServer(client, disruptor)) {
-            server.run();
-        } finally {
-            disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
-            Stream.of(handlers).forEach(DnsMessageHook::close);
-        }
+        final DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
+        final DnsProxyServer server = new DnsProxyServer(client, disruptor);
+        server.run();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    client.close();
+                    server.close();
+                    disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
+                    for (DnsMessageHook hook : handlers) {
+                        hook.close();
+                    }
+                } catch (Exception e) {
+                    log.error("catch an exception in JVM shutdown hook", e);
+                }
+            }
+        }));
     }
 
     /**

@@ -1,11 +1,14 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
+import cn.fantasticmao.dnshooks.proxy.util.Constant;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * ObtainMessageChannelHandler
@@ -13,6 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author maomao
  * @since 2020-03-15
  */
+@Slf4j
 class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
     private final BlockingQueue<T> answer;
 
@@ -22,21 +26,8 @@ class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
         this.answer = new LinkedBlockingQueue<>();
     }
 
-    public T getMessage() {
-        boolean interrupted = false;
-        try {
-            for (; ; ) {
-                try {
-                    return this.answer.take();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            }
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
+    public T getMessage() throws InterruptedException {
+        return this.answer.poll(Constant.LOOKUP_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -46,7 +37,7 @@ class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        log.error("caught an exception", cause);
         ctx.close();
     }
 }

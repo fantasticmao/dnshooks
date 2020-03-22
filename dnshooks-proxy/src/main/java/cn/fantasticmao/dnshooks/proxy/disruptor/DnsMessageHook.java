@@ -23,7 +23,7 @@ public interface DnsMessageHook extends EventHandler<DnsMessage>, AutoCloseable 
     void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception;
 
     @Override
-    default void close() {
+    default void close() throws Exception {
         // adapter for AutoCloseable
     }
 }

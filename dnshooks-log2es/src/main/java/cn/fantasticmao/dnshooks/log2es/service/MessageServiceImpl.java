@@ -59,7 +59,10 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public boolean save(Message message) throws IOException {
         final IndexRequest indexRequest = new IndexRequest(Constant.INDEX_NAME);
-        indexRequest.source(message);
+        indexRequest.source(
+            Message.FIELD_SEND, message.getSend(),
+            Message.FIELD_RECIPIENT, message.getRecipient(),
+            Message.FIELD_DOMAIN, message.getDomain());
         final IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
         return indexResponse.getResult() == DocWriteResponse.Result.CREATED;
     }
@@ -69,12 +72,12 @@ public class MessageServiceImpl implements MessageService {
         send.put("type", "ip");
         Map<String, Object> recipient = new HashMap<>();
         recipient.put("type", "ip");
-        Map<String, Object> queryDomain = new HashMap<>();
-        queryDomain.put("type", "text");
+        Map<String, Object> domain = new HashMap<>();
+        domain.put("type", "text");
         Map<String, Object> properties = new HashMap<>();
-        properties.put("send", send);
-        properties.put("recipient", recipient);
-        properties.put("queryDomain", queryDomain);
+        properties.put(Message.FIELD_SEND, send);
+        properties.put(Message.FIELD_RECIPIENT, recipient);
+        properties.put(Message.FIELD_DOMAIN, domain);
         Map<String, Object> mapping = new HashMap<>();
         mapping.put("properties", properties);
         return mapping;

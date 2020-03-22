@@ -39,9 +39,9 @@ public abstract class DnsProxyClient implements AutoCloseable {
         final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore;
         final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseAfter;
 
-        public Triplet(AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter,
-                       AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore,
-                       AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseAfter) {
+        public Triplet(@Nullable AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter,
+                       @Nullable AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore,
+                       @Nonnull AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseAfter) {
             this.queryAfter = queryAfter;
             this.responseBefore = responseBefore;
             this.responseAfter = responseAfter;

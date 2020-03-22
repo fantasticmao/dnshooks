@@ -1,5 +1,6 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
+import cn.fantasticmao.dnshooks.proxy.util.Constant;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -7,6 +8,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.dns.*;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
@@ -19,6 +21,7 @@ import java.util.List;
  * @author maomao
  * @since 2020-03-12
  */
+@Slf4j
 @Immutable
 public class DnsProxyDatagramClient extends DnsProxyClient {
     private final InetSocketAddress localAddress;
@@ -32,6 +35,7 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
             .group(workerGroup)
             .channel(NioDatagramChannel.class)
             .option(ChannelOption.SO_BROADCAST, true)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Constant.LOOKUP_TIMEOUT)
             .handler(new ChannelInitializer<NioDatagramChannel>() {
                 /*
                  * Notice: the DnsProxyDatagramClient instance object reference (this keyword) is escaped from the
@@ -56,19 +60,34 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
     @Nonnull
     @Override
     protected Triplet lookup(@Nonnull final InetSocketAddress nameServer, @Nonnull final DnsQuery query)
-        throws InterruptedException {
+        throws Exception {
         if (!(query instanceof DatagramDnsQuery)) {
             throw new IllegalArgumentException(query.getClass().getName() + "cannot case to "
                 + DatagramDnsQuery.class.getName());
         }
-        Channel channel = this.bootstrap.connect(nameServer).sync().channel();
+        // TODO should need to cache netty channel?
+        final Channel channel = this.bootstrap.connect(nameServer).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    log.error("connect to " + nameServer + " error", future.cause());
+                }
+            }
+        }).sync().channel();
         try {
-            channel.writeAndFlush(query.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            channel.writeAndFlush(query.retain()).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        log.error("write query " + query + " to  nameServer " + nameServer + " error", future.cause());
+                    }
+                }
+            });
 
             @SuppressWarnings("unchecked")
             ObtainMessageChannelHandler<DatagramDnsResponse> obtainMessageChannelHandler =
                 channel.pipeline().get(ObtainMessageChannelHandler.class);
-            DatagramDnsResponse responseAfter = obtainMessageChannelHandler.getMessage();
+            final DatagramDnsResponse responseAfter = obtainMessageChannelHandler.getMessage();
 
             // obtain query after DNSHooks proxy
             final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter
