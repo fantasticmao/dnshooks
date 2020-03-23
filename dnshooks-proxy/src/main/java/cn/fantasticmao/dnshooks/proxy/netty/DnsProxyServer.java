@@ -26,6 +26,7 @@ import javax.annotation.Nonnull;
 public class DnsProxyServer implements AutoCloseable {
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
+    private Channel channel;
 
     public DnsProxyServer(@Nonnull DnsProxyClient proxyClient,
                           @Nonnegative Disruptor<DnsMessage> disruptor) {
@@ -48,8 +49,8 @@ public class DnsProxyServer implements AutoCloseable {
             });
     }
 
-    public void run() throws Exception {
-        final Channel channel = this.bootstrap.bind().addListener(new ChannelFutureListener() {
+    public void start() throws Exception {
+        this.channel = this.bootstrap.bind().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
@@ -75,6 +76,9 @@ public class DnsProxyServer implements AutoCloseable {
     @Override
     public void close() throws Exception {
         this.workerGroup.shutdownGracefully();
+        if (channel != null) {
+            channel.close();
+        }
     }
 
 }

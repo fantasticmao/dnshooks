@@ -48,14 +48,14 @@ public class Main {
         final InetSocketAddress localAddress = new InetSocketAddress(53);
         final DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
         final DnsProxyServer server = new DnsProxyServer(client, disruptor);
-        server.run();
+        server.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    client.close();
                     server.close();
+                    client.close();
                     disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
                     for (DnsMessageHook hook : handlers) {
                         hook.close();
