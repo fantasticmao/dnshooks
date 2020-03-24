@@ -15,6 +15,8 @@ import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -27,6 +29,9 @@ import java.util.stream.Stream;
  */
 public class MessageServiceImpl implements MessageService {
     private RestHighLevelClient client;
+    private final ZoneId zoneId;
+    private final DateTimeFormatter dateTimeFormatter;
+    private final String dateTimePattern = "yyyy-MM-dd HH:mm:ss";
 
     public MessageServiceImpl() {
         final HttpHost[] httpHosts = Stream.of(Constant.ELASTICSEARCH_HOSTS.split(","))
@@ -34,6 +39,8 @@ public class MessageServiceImpl implements MessageService {
             .toArray(HttpHost[]::new);
         final RestClientBuilder builder = RestClient.builder(httpHosts);
         this.client = new RestHighLevelClient(builder);
+        this.zoneId = ZoneId.systemDefault();
+        this.dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimePattern);
     }
 
     @Override
@@ -60,6 +67,7 @@ public class MessageServiceImpl implements MessageService {
     public boolean save(Message message) throws IOException {
         final IndexRequest indexRequest = new IndexRequest(Constant.INDEX_NAME);
         indexRequest.source(
+            Message.FIELD_DATETIME, message.getDatetime().atZone(this.zoneId).format(this.dateTimeFormatter),
             Message.FIELD_SEND, message.getSend().getAddress().getHostAddress(),
             Message.FIELD_RECIPIENT, message.getRecipient().getAddress().getHostAddress(),
             Message.FIELD_DOMAIN, message.getDomain());
@@ -68,6 +76,9 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private Map<String, ?> indexMapping() throws IOException {
+        Map<String, Object> datetime = new HashMap<>();
+        datetime.put("type", "date");
+        datetime.put("format", this.dateTimePattern);
         Map<String, Object> send = new HashMap<>();
         send.put("type", "ip");
         Map<String, Object> recipient = new HashMap<>();
@@ -75,6 +86,7 @@ public class MessageServiceImpl implements MessageService {
         Map<String, Object> domain = new HashMap<>();
         domain.put("type", "text");
         Map<String, Object> properties = new HashMap<>();
+        properties.put(Message.FIELD_DATETIME, datetime);
         properties.put(Message.FIELD_SEND, send);
         properties.put(Message.FIELD_RECIPIENT, recipient);
         properties.put(Message.FIELD_DOMAIN, domain);

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.time.LocalDateTime;
 
 /**
  * LogToElasticsearchHook
@@ -49,7 +50,7 @@ public class LogToElasticsearchHook implements DnsMessageHook {
         final AddressedEnvelope<DnsResponse, InetSocketAddress> responseAfter = event.getResponseAfter();
         if (queryBefore.content().count(DnsSection.QUESTION) > 0) {
             DnsRecord dnsRecord = queryBefore.content().recordAt(DnsSection.QUESTION);
-            final Message message = new Message(queryBefore.sender(), responseAfter.sender(),
+            final Message message = new Message(LocalDateTime.now(), queryBefore.sender(), responseAfter.sender(),
                 dnsRecord.name());
             try {
                 boolean result = service.save(message);
