@@ -1,6 +1,8 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.DnsProxyServerClientHandler;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.DnsProxyServerDisruptorHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;

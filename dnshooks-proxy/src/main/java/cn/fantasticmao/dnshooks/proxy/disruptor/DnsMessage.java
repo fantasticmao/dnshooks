@@ -1,6 +1,5 @@
 package cn.fantasticmao.dnshooks.proxy.disruptor;
 
-import io.netty.channel.AddressedEnvelope;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
 import lombok.Setter;
@@ -9,7 +8,6 @@ import lombok.ToString;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
-import java.net.InetSocketAddress;
 
 /**
  * Messages in DNSHooks Proxy's workflow, will contains the raw {@link DnsQuery} and {@link DnsResponse} DNS messages.
@@ -34,43 +32,43 @@ public class DnsMessage {
     /**
      * {@link DnsQuery} before DNSHooks Proxy
      */
-    private AddressedEnvelope<DnsQuery, InetSocketAddress> queryBefore;
+    private DnsQuery queryBefore;
 
     /**
      * {@link DnsQuery} after DNSHooks Proxy
      */
-    private AddressedEnvelope<DnsQuery, InetSocketAddress> queryAfter;
+    private DnsQuery queryAfter;
 
     /**
      * {@link DnsResponse} before DNSHooks Proxy
      */
-    private AddressedEnvelope<DnsResponse, InetSocketAddress> responseBefore;
+    private DnsResponse responseBefore;
 
     /**
      * {@link DnsResponse} after DNSHooks Proxy
      */
-    private AddressedEnvelope<DnsResponse, InetSocketAddress> responseAfter;
+    private DnsResponse responseAfter;
 
     public DnsMessage() {
     }
 
     @Nonnull
-    public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryBefore() {
+    public DnsQuery getQueryBefore() {
         return queryBefore;
     }
 
     @Nullable
-    public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryAfter() {
+    public DnsQuery getQueryAfter() {
         return queryAfter;
     }
 
     @Nullable
-    public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseBefore() {
+    public DnsResponse getResponseBefore() {
         return responseBefore;
     }
 
     @Nonnull
-    public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseAfter() {
+    public DnsResponse getResponseAfter() {
         return responseAfter;
     }
 

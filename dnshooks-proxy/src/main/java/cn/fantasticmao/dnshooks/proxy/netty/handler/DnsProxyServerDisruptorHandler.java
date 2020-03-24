@@ -1,7 +1,9 @@
-package cn.fantasticmao.dnshooks.proxy.netty;
+package cn.fantasticmao.dnshooks.proxy.netty.handler;
 
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageTranslator;
+import cn.fantasticmao.dnshooks.proxy.netty.AttributeKeyConstant;
+import cn.fantasticmao.dnshooks.proxy.netty.ErrorResponseConstant;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.channel.*;
 import io.netty.handler.codec.dns.DnsQuery;
@@ -11,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
-import java.net.InetSocketAddress;
 
 /**
  * DnsProxyServerDisruptorHandler
@@ -22,36 +23,34 @@ import java.net.InetSocketAddress;
 @Slf4j
 @Immutable
 @ChannelHandler.Sharable
-class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
+public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
     private final Disruptor<DnsMessage> disruptor;
 
-    DnsProxyServerDisruptorHandler(@Nonnull Disruptor<DnsMessage> disruptor) {
+    public DnsProxyServerDisruptorHandler(@Nonnull Disruptor<DnsMessage> disruptor) {
         this.disruptor = disruptor;
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object responseAfter, ChannelPromise promise) throws Exception {
         try {
-            final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryBefore
-                = ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).get();
-            log.trace("obtain queryBefore: {}", queryBefore);
+            final DnsQuery queryBefore = ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).get();
+            log.trace("obtain DnsQuery before DNSHooks-Proxy: {}", queryBefore);
 
-            final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter
-                = ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).get();
-            log.trace("obtain queryAfter: {}", queryAfter);
+            final DnsQuery queryAfter = ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).get();
+            log.trace("obtain DnsQuery after DNSHooks-Proxy: {}", queryAfter);
 
             // obtain response before DNSHooks proxy
-            final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore
-                = ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
-            log.trace("obtain responseBefore: {}", responseBefore);
+            final DnsResponse responseBefore = ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
+            log.trace("obtain DnsResponse before DNSHooks-Proxy: {}", responseBefore);
 
             try {
+                log.trace("publish event to Disruptor/Ring Buffer");
                 boolean result = this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
                     queryBefore, queryAfter, responseBefore, responseAfter);
                 if (result) {
-                    log.trace("publish Disruptor event success");
+                    log.trace("publish event to Disruptor/Ring Buffer success");
                 } else {
-                    log.warn("publish Disruptor event error");
+                    log.warn("publish event to Disruptor Disruptor/Ring Buffer error");
                 }
             } finally {
                 ReferenceCountUtil.release(queryBefore);
@@ -60,12 +59,12 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
                 ReferenceCountUtil.release(responseBefore);
             }
         } finally {
-            log.trace("write and flush responseAfter: {}", responseAfter);
+            log.trace("write and flush DNS Response: {}", responseAfter);
             ctx.writeAndFlush(responseAfter, promise).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
-                        log.error("write response error", future.cause());
+                        log.error("write and flush DnsResponse after DNSHooks-Proxy error", future.cause());
                         future.channel().writeAndFlush(ErrorResponseConstant.UDP.DEFAULT);
                     }
                 }

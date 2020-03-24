@@ -1,19 +1,24 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
+import cn.fantasticmao.dnshooks.proxy.netty.handler.ObtainMessageChannelHandler;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.ProxyQueryEncoder;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.ProxyResponseDecoder;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageTriplet;
 import cn.fantasticmao.dnshooks.proxy.util.Constant;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.handler.codec.dns.*;
+import io.netty.handler.codec.dns.DatagramDnsQuery;
+import io.netty.handler.codec.dns.DatagramDnsResponse;
+import io.netty.handler.codec.dns.DnsQuery;
+import io.netty.handler.codec.dns.DnsResponse;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import java.net.InetSocketAddress;
-import java.util.List;
 
 /**
  * DnsProxyDatagramClient
@@ -44,8 +49,8 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
                 @Override
                 protected void initChannel(NioDatagramChannel ch) throws Exception {
                     ch.pipeline()
-                        .addLast(new DatagramProxyQueryEncoder(DnsProxyDatagramClient.this))
-                        .addLast(new DatagramProxyResponseDecoder(DnsProxyDatagramClient.this))
+                        .addLast(new ProxyQueryEncoder.Udp(DnsProxyDatagramClient.this))
+                        .addLast(new ProxyResponseDecoder.Udp(DnsProxyDatagramClient.this))
                         .addLast(new ObtainMessageChannelHandler<>(DatagramDnsResponse.class));
                 }
             });
@@ -53,35 +58,35 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
 
     @Nonnull
     @Override
-    protected InetSocketAddress getLocalAddress() {
+    public InetSocketAddress getLocalAddress() {
         return this.localAddress;
     }
 
     @Nonnull
     @Override
-    protected Triplet lookup(@Nonnull final InetSocketAddress nameServer, @Nonnull final DnsQuery query)
+    public DnsMessageTriplet lookup(@Nonnull final InetSocketAddress nameServer, @Nonnull final DnsQuery query)
         throws Exception {
         if (!(query instanceof DatagramDnsQuery)) {
             throw new IllegalArgumentException(query.getClass().getName() + "cannot case to "
                 + DatagramDnsQuery.class.getName());
         }
         // TODO should need to cache netty channel?
-        log.trace("connect to DNS server: {}", nameServer);
+        log.trace("connect to DNS Server: {}", nameServer);
         final Channel channel = this.bootstrap.connect(nameServer).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("connect to " + nameServer + " error", future.cause());
+                    log.error("connect to DNS Server: " + nameServer + " error", future.cause());
                 }
             }
         }).sync().channel();
         try {
-            log.trace("write queryBefore: {} to DNS server: {}", query, nameServer);
+            log.trace("write DNS Query: {} to DNS Server: {}", query, nameServer);
             channel.writeAndFlush(query.retain()).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
-                        log.error("write query " + query + " to  DNS server " + nameServer + " error", future.cause());
+                        log.error("write DNS Query: " + query + " to  DNS Server " + nameServer + " error", future.cause());
                     }
                 }
             });
@@ -91,15 +96,13 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
                 channel.pipeline().get(ObtainMessageChannelHandler.class);
             final DatagramDnsResponse responseAfter = obtainMessageChannelHandler.getMessage();
 
-            final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter
-                = channel.attr(AttributeKeyConstant.QUERY_AFTER).get();
-            log.trace("obtain queryAfter: {}", queryAfter);
+            final DnsQuery queryAfter = channel.attr(AttributeKeyConstant.QUERY_AFTER).get();
+            log.trace("obtain DnsQuery after DNSHooks-Proxy: {}", queryAfter);
 
-            final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore
-                = channel.attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
-            log.trace("obtain responseBefore: {}", responseBefore);
+            final DnsResponse responseBefore = channel.attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
+            log.trace("obtain DnsResponse before DNSHooks-Proxy: {}", responseBefore);
 
-            return new Triplet(queryAfter, responseBefore, responseAfter);
+            return new DnsMessageTriplet(queryAfter, responseBefore, responseAfter);
         } finally {
             channel.close();
         }
@@ -108,59 +111,5 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
     @Override
     public void close() throws Exception {
         this.workerGroup.shutdownGracefully();
-    }
-
-    @Slf4j
-    @Immutable
-    @ChannelHandler.Sharable
-    private static class DatagramProxyQueryEncoder extends DatagramDnsQueryEncoder implements ProxyQueryEncoder {
-        private final DnsProxyDatagramClient client;
-
-        public DatagramProxyQueryEncoder(@Nonnull DnsProxyDatagramClient client) {
-            super();
-            this.client = client;
-        }
-
-        @Override
-        protected void encode(ChannelHandlerContext ctx,
-                              AddressedEnvelope<DnsQuery, InetSocketAddress> in, List<Object> out) throws Exception {
-            log.trace("save raw sender: {}", in.sender());
-            ctx.channel().attr(AttributeKeyConstant.RAW_SENDER).set(in.sender());
-
-            // get DNS server address from channel
-            final InetSocketAddress recipient = (InetSocketAddress) ctx.channel().remoteAddress();
-
-            AddressedEnvelopeAdapter queryProxy = new AddressedEnvelopeAdapter(null, recipient, in);
-
-            log.trace("save queryAfter: {}", queryProxy);
-            ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).set(queryProxy);
-
-            super.encode(ctx, queryProxy, out);
-        }
-    }
-
-    @Slf4j
-    @Immutable
-    @ChannelHandler.Sharable
-    private static class DatagramProxyResponseDecoder extends DatagramDnsResponseDecoder implements ProxyResponseDecoder {
-        private final DnsProxyDatagramClient client;
-
-        public DatagramProxyResponseDecoder(@Nonnull DnsProxyDatagramClient client) {
-            this.client = client;
-        }
-
-        @Override
-        protected void decode(ChannelHandlerContext ctx, DatagramPacket packet, List<Object> out) throws Exception {
-            DatagramDnsResponse responseBefore = (DatagramDnsResponse) super.decodeResponse(null, packet.copy());
-            log.trace("save responseBefore: {}", responseBefore);
-            ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).set(responseBefore);
-
-            // obtain raw sender, and it is the raw recipient in DnsResponse
-            final InetSocketAddress recipient = ctx.channel().attr(AttributeKeyConstant.RAW_SENDER).get();
-            log.trace("obtain raw sender: {}", recipient);
-
-            DatagramPacket responseProxy = new DatagramPacket(packet.content(), recipient, client.localAddress);
-            super.decode(ctx, responseProxy, out);
-        }
     }
 }

@@ -16,11 +16,11 @@ import java.util.List;
  * @author maomao
  * @since 2020-03-16
  */
-class DnsServerAddressUtil {
+public class DnsServerAddressUtil {
     private static DnsServerAddressStreamProvider provider = DnsServerAddressStreamProviders.platformDefault();
     private static InetAddress loopbackAddress = SocketUtils.loopbackAddress();
 
-    static List<InetSocketAddress> listRawDnsServerAddress() {
+    public static List<InetSocketAddress> listRawDnsServerAddress() {
         List<InetSocketAddress> list = new LinkedList<>();
         DnsServerAddressStream serverAddressStream = provider.nameServerAddressStream("");
         for (int i = 0; i < serverAddressStream.size(); i++) {

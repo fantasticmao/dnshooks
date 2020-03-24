@@ -1,5 +1,6 @@
 package cn.fantasticmao.dnshooks.proxy.netty;
 
+import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageTriplet;
 import io.netty.handler.codec.dns.DatagramDnsQuery;
 import io.netty.handler.codec.dns.DefaultDnsQuestion;
 import io.netty.handler.codec.dns.DnsRecordType;
@@ -38,11 +39,11 @@ public class DnsProxyDatagramClientTest {
         dnsQuery.addRecord(DnsSection.QUESTION, new DefaultDnsQuestion("fantasticmao.cn", DnsRecordType.A));
 
         try (DnsProxyDatagramClient client = new DnsProxyDatagramClient(localAddress)) {
-            final DnsProxyClient.Triplet triplet = client.lookup(dnsServerAddress, dnsQuery);
+            final DnsMessageTriplet triplet = client.lookup(dnsServerAddress, dnsQuery);
             Assert.assertNotNull(triplet);
-            log.info("DnsQuery After :" + triplet.queryAfter);
-            log.info("DnsResponse Before: " + triplet.responseBefore);
-            log.info("DnsResponse After: " + triplet.responseAfter);
+            log.info("DnsQuery After :" + triplet.getQueryAfter());
+            log.info("DnsResponse Before: " + triplet.getResponseBefore());
+            log.info("DnsResponse After: " + triplet.getResponseAfter());
         } catch (InterruptedException e) {
             Assert.fail(e.getMessage());
         }

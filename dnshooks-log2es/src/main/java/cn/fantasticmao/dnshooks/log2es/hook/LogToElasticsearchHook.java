@@ -6,15 +6,10 @@ import cn.fantasticmao.dnshooks.log2es.service.MessageServiceImpl;
 import cn.fantasticmao.dnshooks.log2es.util.Constant;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageHook;
-import io.netty.channel.AddressedEnvelope;
-import io.netty.handler.codec.dns.DnsQuery;
-import io.netty.handler.codec.dns.DnsRecord;
-import io.netty.handler.codec.dns.DnsResponse;
-import io.netty.handler.codec.dns.DnsSection;
+import io.netty.handler.codec.dns.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 
 /**
@@ -46,12 +41,16 @@ public class LogToElasticsearchHook implements DnsMessageHook {
 
     @Override
     public void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception {
-        final AddressedEnvelope<DnsQuery, InetSocketAddress> queryBefore = event.getQueryBefore();
-        final AddressedEnvelope<DnsResponse, InetSocketAddress> responseAfter = event.getResponseAfter();
-        if (queryBefore.content().count(DnsSection.QUESTION) > 0) {
-            DnsRecord dnsRecord = queryBefore.content().recordAt(DnsSection.QUESTION);
-            final Message message = new Message(LocalDateTime.now(), queryBefore.sender(), responseAfter.sender(),
-                dnsRecord.name());
+        final DnsQuery queryBefore = event.getQueryBefore();
+        final DnsResponse responseAfter = event.getResponseAfter();
+        if (queryBefore.count(DnsSection.QUESTION) > 0
+            && queryBefore instanceof DatagramDnsQuery
+            && responseAfter instanceof DatagramDnsResponse) {
+            final DatagramDnsQuery dnsQuery = (DatagramDnsQuery) queryBefore;
+            final DatagramDnsResponse dnsResponse = (DatagramDnsResponse) responseAfter;
+            final DnsRecord dnsQuestion = dnsQuery.recordAt(DnsSection.QUESTION);
+            final Message message = new Message(LocalDateTime.now(), dnsQuery.sender(), dnsResponse.sender(),
+                dnsQuestion.name());
             try {
                 boolean result = service.save(message);
                 if (!result) {

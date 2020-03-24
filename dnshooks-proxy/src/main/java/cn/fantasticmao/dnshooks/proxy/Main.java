@@ -43,11 +43,11 @@ public class Main {
         DnsMessageHook[] handlers = loadHooks().toArray(new DnsMessageHook[0]);
         disruptor.handleEventsWith(handlers);
         disruptor.setDefaultExceptionHandler(new DnsMessageExceptionHandler());
-        log.trace("start Disruptor");
         disruptor.start();
+        log.trace("start Disruptor/Ring Buffer success");
 
         final InetSocketAddress localAddress = new InetSocketAddress(53);
-        log.trace("DNSHooks proxy bind local address: {}", localAddress);
+        log.trace("DNSHooks-Proxy bind local address: {}", localAddress);
 
         final DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
         final DnsProxyServer server = new DnsProxyServer(client, disruptor);
@@ -88,12 +88,12 @@ public class Main {
     }
 
     private static void printBanner() throws URISyntaxException, IOException {
-        Path path = Paths.get(Main.class.getResource("/banner.txt").toURI());
+        final Path path = Paths.get(Main.class.getResource("/banner.txt").toURI());
         if (Files.exists(path)) {
             byte[] bytes = Files.readAllBytes(path);
             System.out.write(bytes);
         } else {
-            log.trace("banner.txt file does not exists");
+            log.trace("{} file does not exists", path);
         }
     }
 }

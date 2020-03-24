@@ -1,4 +1,4 @@
-package cn.fantasticmao.dnshooks.proxy.netty;
+package cn.fantasticmao.dnshooks.proxy.netty.handler;
 
 import cn.fantasticmao.dnshooks.proxy.util.Constant;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,25 +17,25 @@ import java.util.concurrent.TimeUnit;
  * @since 2020-03-15
  */
 @Slf4j
-class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
+public class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
     private final BlockingQueue<T> answer;
 
-    ObtainMessageChannelHandler(@Nonnull Class<? extends T> inboundMessageType) {
+    public ObtainMessageChannelHandler(@Nonnull Class<? extends T> inboundMessageType) {
         super(inboundMessageType, false);
         // Notice: LinkedBlockingQueue may cause OutOfMemoryError
         this.answer = new LinkedBlockingQueue<>();
     }
 
     public T getMessage() throws InterruptedException {
-        log.trace("start poll msg from blocking queue ......");
+        log.trace("start poll msg from BlockingQueue, waiting ......");
         T msg = this.answer.poll(Constant.LOOKUP_TIMEOUT, TimeUnit.MILLISECONDS);
-        log.trace("finish poll msg from blocking queue: {}", msg);
+        log.trace("finish poll msg from BlockingQueue: {}", msg);
         return msg;
     }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
-        log.trace("offer msg: {} to blocking queue", msg);
+        log.trace("offer msg to BlockingQueue: {}", msg);
         this.answer.offer(msg);
     }
 
