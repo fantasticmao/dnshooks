@@ -3,6 +3,8 @@ package cn.fantasticmao.dnshooks.proxy.disruptor;
 import io.netty.channel.AddressedEnvelope;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
+import lombok.Setter;
+import lombok.ToString;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -25,6 +27,8 @@ import java.net.InetSocketAddress;
  * @author maomao
  * @since 2020-03-12
  */
+@Setter
+@ToString
 @NotThreadSafe
 public class DnsMessage {
     /**
@@ -55,17 +59,9 @@ public class DnsMessage {
         return queryBefore;
     }
 
-    public void setQueryBefore(AddressedEnvelope<DnsQuery, InetSocketAddress> queryBefore) {
-        this.queryBefore = queryBefore;
-    }
-
     @Nullable
     public AddressedEnvelope<DnsQuery, InetSocketAddress> getQueryAfter() {
         return queryAfter;
-    }
-
-    public void setQueryAfter(AddressedEnvelope<DnsQuery, InetSocketAddress> queryAfter) {
-        this.queryAfter = queryAfter;
     }
 
     @Nullable
@@ -73,16 +69,9 @@ public class DnsMessage {
         return responseBefore;
     }
 
-    public void setResponseBefore(AddressedEnvelope<DnsResponse, InetSocketAddress> responseBefore) {
-        this.responseBefore = responseBefore;
-    }
-
     @Nonnull
     public AddressedEnvelope<DnsResponse, InetSocketAddress> getResponseAfter() {
         return responseAfter;
     }
 
-    public void setResponseAfter(AddressedEnvelope<DnsResponse, InetSocketAddress> responseAfter) {
-        this.responseAfter = responseAfter;
-    }
 }

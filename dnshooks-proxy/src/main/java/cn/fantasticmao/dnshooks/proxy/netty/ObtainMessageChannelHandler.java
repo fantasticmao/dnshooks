@@ -27,11 +27,15 @@ class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<T> {
     }
 
     public T getMessage() throws InterruptedException {
-        return this.answer.poll(Constant.LOOKUP_TIMEOUT, TimeUnit.MILLISECONDS);
+        log.trace("start poll msg from blocking queue ......");
+        T msg = this.answer.poll(Constant.LOOKUP_TIMEOUT, TimeUnit.MILLISECONDS);
+        log.trace("finish poll msg from blocking queue: {}", msg);
+        return msg;
     }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+        log.trace("offer msg: {} to blocking queue", msg);
         this.answer.offer(msg);
     }
 

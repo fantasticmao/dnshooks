@@ -66,6 +66,7 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
                 + DatagramDnsQuery.class.getName());
         }
         // TODO should need to cache netty channel?
+        log.trace("connect to DNS server: {}", nameServer);
         final Channel channel = this.bootstrap.connect(nameServer).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
@@ -75,11 +76,12 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
             }
         }).sync().channel();
         try {
+            log.trace("write queryBefore: {} to DNS server: {}", query, nameServer);
             channel.writeAndFlush(query.retain()).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
-                        log.error("write query " + query + " to  nameServer " + nameServer + " error", future.cause());
+                        log.error("write query " + query + " to  DNS server " + nameServer + " error", future.cause());
                     }
                 }
             });
@@ -89,13 +91,13 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
                 channel.pipeline().get(ObtainMessageChannelHandler.class);
             final DatagramDnsResponse responseAfter = obtainMessageChannelHandler.getMessage();
 
-            // obtain query after DNSHooks proxy
             final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter
                 = channel.attr(AttributeKeyConstant.QUERY_AFTER).get();
+            log.trace("obtain queryAfter: {}", queryAfter);
 
-            // obtain query after DNSHooks proxy
             final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore
                 = channel.attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
+            log.trace("obtain responseBefore: {}", responseBefore);
 
             return new Triplet(queryAfter, responseBefore, responseAfter);
         } finally {
@@ -108,6 +110,7 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
         this.workerGroup.shutdownGracefully();
     }
 
+    @Slf4j
     @Immutable
     @ChannelHandler.Sharable
     private static class DatagramProxyQueryEncoder extends DatagramDnsQueryEncoder implements ProxyQueryEncoder {
@@ -121,7 +124,7 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
         @Override
         protected void encode(ChannelHandlerContext ctx,
                               AddressedEnvelope<DnsQuery, InetSocketAddress> in, List<Object> out) throws Exception {
-            // save raw sender
+            log.trace("save raw sender: {}", in.sender());
             ctx.channel().attr(AttributeKeyConstant.RAW_SENDER).set(in.sender());
 
             // get DNS server address from channel
@@ -129,13 +132,14 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
 
             AddressedEnvelopeAdapter queryProxy = new AddressedEnvelopeAdapter(null, recipient, in);
 
-            // save query after DNSHooks proxy
+            log.trace("save queryAfter: {}", queryProxy);
             ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).set(queryProxy);
 
             super.encode(ctx, queryProxy, out);
         }
     }
 
+    @Slf4j
     @Immutable
     @ChannelHandler.Sharable
     private static class DatagramProxyResponseDecoder extends DatagramDnsResponseDecoder implements ProxyResponseDecoder {
@@ -147,12 +151,13 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
 
         @Override
         protected void decode(ChannelHandlerContext ctx, DatagramPacket packet, List<Object> out) throws Exception {
-            // save response before DNSHooks proxy
             DatagramDnsResponse responseBefore = (DatagramDnsResponse) super.decodeResponse(null, packet.copy());
+            log.trace("save responseBefore: {}", responseBefore);
             ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).set(responseBefore);
 
             // obtain raw sender, and it is the raw recipient in DnsResponse
             final InetSocketAddress recipient = ctx.channel().attr(AttributeKeyConstant.RAW_SENDER).get();
+            log.trace("obtain raw sender: {}", recipient);
 
             DatagramPacket responseProxy = new DatagramPacket(packet.content(), recipient, client.localAddress);
             super.decode(ctx, responseProxy, out);

@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Main
@@ -42,10 +43,12 @@ public class Main {
         DnsMessageHook[] handlers = loadHooks().toArray(new DnsMessageHook[0]);
         disruptor.handleEventsWith(handlers);
         disruptor.setDefaultExceptionHandler(new DnsMessageExceptionHandler());
-        // start Disruptor
+        log.trace("start Disruptor");
         disruptor.start();
 
         final InetSocketAddress localAddress = new InetSocketAddress(53);
+        log.trace("DNSHooks proxy bind local address: {}", localAddress);
+
         final DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
         final DnsProxyServer server = new DnsProxyServer(client, disruptor);
         server.start();
@@ -54,6 +57,7 @@ public class Main {
             @Override
             public void run() {
                 try {
+                    log.trace("trigger JVM shutdown hook");
                     server.close();
                     client.close();
                     disruptor.shutdown(1000, TimeUnit.MILLISECONDS);
@@ -75,12 +79,21 @@ public class Main {
     private static List<DnsMessageHook> loadHooks() {
         List<DnsMessageHook> handlerList = new LinkedList<>();
         ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
+        if (log.isTraceEnabled()) {
+            log.trace("load all DnsMessageHook: {}", handlerList.stream()
+                .map(DnsMessageHook::name)
+                .collect(Collectors.toList()));
+        }
         return handlerList;
     }
 
     private static void printBanner() throws URISyntaxException, IOException {
         Path path = Paths.get(Main.class.getResource("/banner.txt").toURI());
-        byte[] bytes = Files.readAllBytes(path);
-        System.out.write(bytes);
+        if (Files.exists(path)) {
+            byte[] bytes = Files.readAllBytes(path);
+            System.out.write(bytes);
+        } else {
+            log.trace("banner.txt file does not exists");
+        }
     }
 }

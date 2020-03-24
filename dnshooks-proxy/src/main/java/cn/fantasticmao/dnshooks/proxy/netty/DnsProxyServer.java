@@ -75,10 +75,10 @@ public class DnsProxyServer implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        this.workerGroup.shutdownGracefully();
         if (channel != null) {
             channel.close();
         }
+        this.workerGroup.shutdownGracefully();
     }
 
 }

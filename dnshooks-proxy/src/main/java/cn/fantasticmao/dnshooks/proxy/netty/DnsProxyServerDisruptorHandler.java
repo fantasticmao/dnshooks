@@ -32,22 +32,25 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object responseAfter, ChannelPromise promise) throws Exception {
         try {
-            // obtain query before DNSHooks proxy
             final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryBefore
                 = ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).get();
+            log.trace("obtain queryBefore: {}", queryBefore);
 
-            // obtain query after DNSHooks proxy
             final AddressedEnvelope<? extends DnsQuery, InetSocketAddress> queryAfter
                 = ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).get();
+            log.trace("obtain queryAfter: {}", queryAfter);
 
             // obtain response before DNSHooks proxy
             final AddressedEnvelope<? extends DnsResponse, InetSocketAddress> responseBefore
                 = ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).get();
+            log.trace("obtain responseBefore: {}", responseBefore);
 
             try {
                 boolean result = this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
                     queryBefore, queryAfter, responseBefore, responseAfter);
-                if (!result) {
+                if (result) {
+                    log.trace("publish Disruptor event success");
+                } else {
                     log.warn("publish Disruptor event error");
                 }
             } finally {
@@ -57,6 +60,7 @@ class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
                 ReferenceCountUtil.release(responseBefore);
             }
         } finally {
+            log.trace("write and flush responseAfter: {}", responseAfter);
             ctx.writeAndFlush(responseAfter, promise).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

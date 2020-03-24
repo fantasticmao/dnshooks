@@ -60,8 +60,8 @@ public class MessageServiceImpl implements MessageService {
     public boolean save(Message message) throws IOException {
         final IndexRequest indexRequest = new IndexRequest(Constant.INDEX_NAME);
         indexRequest.source(
-            Message.FIELD_SEND, message.getSend(),
-            Message.FIELD_RECIPIENT, message.getRecipient(),
+            Message.FIELD_SEND, message.getSend().getAddress().getHostAddress(),
+            Message.FIELD_RECIPIENT, message.getRecipient().getAddress().getHostAddress(),
             Message.FIELD_DOMAIN, message.getDomain());
         final IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
         return indexResponse.getResult() == DocWriteResponse.Result.CREATED;

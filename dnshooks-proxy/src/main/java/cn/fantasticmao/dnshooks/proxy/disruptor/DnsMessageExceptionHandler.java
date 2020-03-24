@@ -14,7 +14,7 @@ public class DnsMessageExceptionHandler implements ExceptionHandler<DnsMessage> 
 
     @Override
     public void handleEventException(Throwable ex, long sequence, DnsMessage event) {
-        log.error("handleEventException, DNS Message " + event, ex);
+        log.error("handleEventException, DNS Message: " + event, ex);
     }
 
     @Override
