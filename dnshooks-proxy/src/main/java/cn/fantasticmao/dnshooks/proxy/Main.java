@@ -50,7 +50,7 @@ public class Main {
         log.trace("DNSHooks-Proxy bind local address: {}", localAddress);
 
         final DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
-        final DnsProxyServer server = new DnsProxyServer(client, disruptor);
+        final DnsProxyServer server = new DnsProxyServer(localAddress, client, disruptor);
         server.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

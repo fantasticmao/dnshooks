@@ -57,7 +57,6 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
     }
 
     @Nonnull
-    @Override
     public InetSocketAddress getLocalAddress() {
         return this.localAddress;
     }

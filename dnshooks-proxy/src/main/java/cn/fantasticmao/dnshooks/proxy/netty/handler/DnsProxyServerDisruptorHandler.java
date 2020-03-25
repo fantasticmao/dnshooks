@@ -54,8 +54,7 @@ public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapte
                 }
             } finally {
                 ReferenceCountUtil.release(queryBefore);
-                // queryAfter doesn't need to release
-                //ReferenceCountUtil.release(queryAfter);
+                ReferenceCountUtil.release(queryAfter);
                 ReferenceCountUtil.release(responseBefore);
             }
         } finally {
@@ -65,7 +64,7 @@ public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapte
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         log.error("write and flush DnsResponse after DNSHooks-Proxy error", future.cause());
-                        future.channel().writeAndFlush(ErrorResponseConstant.UDP.DEFAULT);
+                        future.channel().writeAndFlush(ErrorResponseConstant.UDP.ERROR);
                     }
                 }
             });

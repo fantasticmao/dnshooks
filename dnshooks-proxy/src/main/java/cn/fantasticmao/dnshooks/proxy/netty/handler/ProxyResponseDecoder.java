@@ -2,6 +2,7 @@ package cn.fantasticmao.dnshooks.proxy.netty.handler;
 
 import cn.fantasticmao.dnshooks.proxy.netty.AttributeKeyConstant;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyDatagramClient;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageUtil;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -16,13 +17,22 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
- * ProxyResponseDecoder
+ * Used for change the DNS response's sender and recipient, and will NOT change the DNS record.
+ *
+ * <p>
+ * For example: change <code>DnsResponse(from: /192.168.1.1:53, to: /192.168.1.66:5678)</code>
+ * to <code>DnsResponse(from: /192.168.1.66:53, to: /192.168.1.66:1234)</code>
+ * </p>
  *
  * @author maomao
+ * @see ProxyQueryEncoder
  * @since 2020-03-24
  */
 public interface ProxyResponseDecoder extends ChannelInboundHandler {
 
+    /**
+     * Decodes a {@link DatagramPacket} into a {@link DatagramDnsResponse}.
+     */
     @Slf4j
     @Immutable
     @ChannelHandler.Sharable
@@ -38,13 +48,13 @@ public interface ProxyResponseDecoder extends ChannelInboundHandler {
             // obtain raw sender, and it is the raw recipient in DnsResponse
             final InetSocketAddress recipient = ctx.channel().attr(AttributeKeyConstant.RAW_SENDER).get();
             log.trace("obtain DnsQuery raw sender address: {}", recipient);
-
-            DatagramDnsResponse responseBefore = (DatagramDnsResponse) super.decodeResponse(null, packet.copy());
+            final DatagramDnsResponse responseBefore = (DatagramDnsResponse) super.decodeResponse(null, packet);
             log.trace("save DnsResponse before DNSHooks-Proxy: {}", responseBefore);
             ctx.channel().attr(AttributeKeyConstant.RESPONSE_BEFORE).set(responseBefore);
 
-            DatagramPacket responseProxy = new DatagramPacket(packet.content(), recipient, client.getLocalAddress());
-            super.decode(ctx, responseProxy, out);
+            final DatagramDnsResponse responseAfter = DnsMessageUtil.newUdpResponse(client.getLocalAddress(),
+                recipient, responseBefore);
+            out.add(responseAfter);
         }
     }
 }

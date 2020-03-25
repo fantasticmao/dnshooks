@@ -10,7 +10,6 @@ import io.netty.handler.codec.dns.DatagramDnsResponse;
  */
 public interface ErrorResponseConstant {
     interface UDP {
-        DatagramDnsResponse DEFAULT = null;
-        DatagramDnsResponse TIMEOUT = null;
+        DatagramDnsResponse ERROR = null;
     }
 }

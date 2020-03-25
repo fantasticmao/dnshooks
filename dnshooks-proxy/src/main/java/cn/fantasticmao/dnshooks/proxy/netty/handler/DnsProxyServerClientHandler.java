@@ -8,7 +8,6 @@ import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageTriplet;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.dns.DatagramDnsQuery;
 import io.netty.handler.codec.dns.DnsQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,13 +35,8 @@ public class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<Dns
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, DnsQuery query) throws Exception {
-        if (query instanceof DatagramDnsQuery) {
-            DatagramDnsQuery dnsQuery = (DatagramDnsQuery) query;
-            log.trace("save DnsQuery before DNSHooks-Proxy: {}", dnsQuery);
-            ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).set(dnsQuery);
-        } else {
-            // TODO adapter tcp DnsQuery
-        }
+        log.trace("save DnsQuery before DNSHooks-Proxy: {}", query);
+        ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).set(query);
 
         final DnsMessageTriplet dnsMessageTriplet = this.proxy(query);
 
@@ -60,7 +54,7 @@ public class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<Dns
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         log.error("read DNS Query error", cause);
-        ctx.channel().writeAndFlush(ErrorResponseConstant.UDP.DEFAULT);
+        ctx.channel().writeAndFlush(ErrorResponseConstant.UDP.ERROR);
     }
 
     private DnsMessageTriplet proxy(@Nonnull DnsQuery query) {
@@ -72,7 +66,7 @@ public class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<Dns
             return client.lookup(dnsServerAddress, query);
         } catch (Exception e) {
             log.error("proxy DNS Query error", e);
-            return new DnsMessageTriplet(null, null, ErrorResponseConstant.UDP.DEFAULT);
+            return new DnsMessageTriplet(null, null, ErrorResponseConstant.UDP.ERROR);
         }
     }
 }
