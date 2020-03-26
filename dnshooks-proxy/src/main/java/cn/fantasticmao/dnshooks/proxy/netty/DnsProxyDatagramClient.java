@@ -29,12 +29,13 @@ import java.net.InetSocketAddress;
 @Slf4j
 @Immutable
 public class DnsProxyDatagramClient extends DnsProxyClient {
-    private final InetSocketAddress localAddress;
+    private InetSocketAddress dnsServerAddress;
     private final EventLoopGroup workerGroup;
     private final Bootstrap bootstrap;
 
-    public DnsProxyDatagramClient(@Nonnull final InetSocketAddress localAddress) {
-        this.localAddress = localAddress;
+    public DnsProxyDatagramClient(@Nonnull final InetSocketAddress proxyServerAddress,
+                                  @Nonnull final InetSocketAddress dnsServerAddress) {
+        this.dnsServerAddress = dnsServerAddress;
         this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DnsProxyDatagramClient"));
         this.bootstrap = new Bootstrap()
             .group(workerGroup)
@@ -42,50 +43,43 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
             .option(ChannelOption.SO_BROADCAST, true)
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Constant.LOOKUP_TIMEOUT)
             .handler(new ChannelInitializer<NioDatagramChannel>() {
-                /*
-                 * Notice: the DnsProxyDatagramClient instance object reference (this keyword) is escaped from the
-                 * constructor, but DnsProxyDatagramClient is a thread safe class, so it's no problem.
-                 */
                 @Override
                 protected void initChannel(NioDatagramChannel ch) throws Exception {
                     ch.pipeline()
-                        .addLast(new ProxyQueryEncoder.Udp(DnsProxyDatagramClient.this))
-                        .addLast(new ProxyResponseDecoder.Udp(DnsProxyDatagramClient.this))
+                        .addLast(new ProxyQueryEncoder.Udp(dnsServerAddress))
+                        .addLast(new ProxyResponseDecoder.Udp(proxyServerAddress))
                         .addLast(new ObtainMessageChannelHandler<>(DatagramDnsResponse.class));
                 }
             });
     }
 
     @Nonnull
-    public InetSocketAddress getLocalAddress() {
-        return this.localAddress;
-    }
-
-    @Nonnull
     @Override
-    public DnsMessageTriplet lookup(@Nonnull final InetSocketAddress nameServer, @Nonnull final DnsQuery query)
+    public DnsMessageTriplet lookup(@Nonnull final DnsQuery query)
         throws Exception {
         if (!(query instanceof DatagramDnsQuery)) {
             throw new IllegalArgumentException(query.getClass().getName() + "cannot case to "
                 + DatagramDnsQuery.class.getName());
         }
         // TODO should need to cache netty channel?
-        log.trace("connect to DNS Server: {}", nameServer);
-        final Channel channel = this.bootstrap.connect(nameServer).addListener(new ChannelFutureListener() {
+        log.trace("connect to DNS Server: {}", this.dnsServerAddress);
+        final Channel channel = this.bootstrap.connect(this.dnsServerAddress).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("connect to DNS Server: " + nameServer + " error", future.cause());
+                    log.error("connect to DNS Server: " +
+                        DnsProxyDatagramClient.this.dnsServerAddress + " error", future.cause());
                 }
             }
         }).sync().channel();
         try {
-            log.trace("write DNS Query: {} to DNS Server: {}", query, nameServer);
+            log.trace("write DNS Query: {} to DNS Server: {}", query, this.dnsServerAddress);
             channel.writeAndFlush(query.retain()).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
-                        log.error("write DNS Query: " + query + " to  DNS Server " + nameServer + " error", future.cause());
+                        log.error("write DNS Query: " + query + " to  DNS Server " +
+                            DnsProxyDatagramClient.this.dnsServerAddress + " error", future.cause());
                     }
                 }
             });

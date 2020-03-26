@@ -4,6 +4,7 @@ import cn.fantasticmao.dnshooks.proxy.disruptor.*;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyClient;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyDatagramClient;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyServer;
+import cn.fantasticmao.dnshooks.proxy.netty.DnsServerAddressUtil;
 import cn.fantasticmao.dnshooks.proxy.util.Constant;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
@@ -46,11 +47,14 @@ public class Main {
         disruptor.start();
         log.trace("start Disruptor/Ring Buffer success");
 
-        final InetSocketAddress localAddress = new InetSocketAddress(53);
-        log.trace("DNSHooks-Proxy bind local address: {}", localAddress);
+        final InetSocketAddress proxyServerAddress = new InetSocketAddress(53);
+        log.trace("DNSHooks-Proxy bind local address: {}", proxyServerAddress);
 
-        final DnsProxyClient client = new DnsProxyDatagramClient(localAddress);
-        final DnsProxyServer server = new DnsProxyServer(localAddress, client, disruptor);
+        final InetSocketAddress dnsServerAddress = choseDnsServerAddress();
+        log.trace("chose DNS Server Address: {}", dnsServerAddress);
+
+        final DnsProxyClient client = new DnsProxyDatagramClient(proxyServerAddress, dnsServerAddress);
+        final DnsProxyServer server = new DnsProxyServer(proxyServerAddress, client, disruptor);
         server.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -69,6 +73,12 @@ public class Main {
                 }
             }
         }));
+    }
+
+    private static InetSocketAddress choseDnsServerAddress() {
+        // TODO filter 127.0.0.1:53 && chose DNS server address
+        List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
+        return dnsServerAddressList.get(0);
     }
 
     /**

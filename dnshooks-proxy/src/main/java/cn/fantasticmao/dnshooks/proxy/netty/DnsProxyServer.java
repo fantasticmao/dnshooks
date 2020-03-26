@@ -14,7 +14,6 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import jdk.nashorn.internal.ir.annotations.Immutable;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import java.net.InetSocketAddress;
 
@@ -31,15 +30,15 @@ public class DnsProxyServer implements AutoCloseable {
     private final Bootstrap bootstrap;
     private Channel channel;
 
-    public DnsProxyServer(@Nonnull InetSocketAddress localAddress,
+    public DnsProxyServer(@Nonnull InetSocketAddress proxyServerAddress,
                           @Nonnull DnsProxyClient proxyClient,
-                          @Nonnegative Disruptor<DnsMessage> disruptor) {
+                          @Nonnull Disruptor<DnsMessage> disruptor) {
         // config netty Bootstrap
         this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DnsProxyServer"));
         this.bootstrap = new Bootstrap()
             .group(workerGroup)
             .channel(NioDatagramChannel.class)
-            .localAddress(localAddress)
+            .localAddress(proxyServerAddress)
             .option(ChannelOption.SO_BROADCAST, true)
             .handler(new ChannelInitializer<NioDatagramChannel>() {
                 @Override

@@ -20,8 +20,8 @@ public class DnsProxyDatagramClientTest extends DnsProtocolTest {
     @Test
     public void lookup() throws Exception {
         final DatagramDnsQuery dnsQuery = super.newUdpQuery(new InetSocketAddress(0), super.dnsServerAddress);
-        try (DnsProxyDatagramClient client = new DnsProxyDatagramClient(super.proxyServerAddress)) {
-            final DnsMessageTriplet triplet = client.lookup(super.dnsServerAddress, dnsQuery);
+        try (DnsProxyDatagramClient client = new DnsProxyDatagramClient(super.proxyServerAddress, super.dnsServerAddress)) {
+            final DnsMessageTriplet triplet = client.lookup(dnsQuery);
             Assert.assertNotNull(triplet);
             log.info("DnsQuery After :" + triplet.getQueryAfter());
             log.info("DnsResponse Before: " + triplet.getResponseBefore());

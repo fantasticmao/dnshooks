@@ -4,7 +4,6 @@ import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageTriplet;
 import io.netty.handler.codec.dns.DnsQuery;
 
 import javax.annotation.Nonnull;
-import java.net.InetSocketAddress;
 
 /**
  * DnsProxyClient
@@ -15,7 +14,6 @@ import java.net.InetSocketAddress;
 public abstract class DnsProxyClient implements AutoCloseable {
 
     @Nonnull
-    public abstract DnsMessageTriplet lookup(@Nonnull final InetSocketAddress nameServer,
-                                             @Nonnull final DnsQuery query) throws Exception;
+    public abstract DnsMessageTriplet lookup(@Nonnull final DnsQuery query) throws Exception;
 
 }

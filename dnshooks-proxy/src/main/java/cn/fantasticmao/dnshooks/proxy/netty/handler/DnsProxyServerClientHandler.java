@@ -2,7 +2,6 @@ package cn.fantasticmao.dnshooks.proxy.netty.handler;
 
 import cn.fantasticmao.dnshooks.proxy.netty.AttributeKeyConstant;
 import cn.fantasticmao.dnshooks.proxy.netty.DnsProxyClient;
-import cn.fantasticmao.dnshooks.proxy.netty.DnsServerAddressUtil;
 import cn.fantasticmao.dnshooks.proxy.netty.ErrorResponseConstant;
 import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageTriplet;
 import io.netty.channel.ChannelHandler;
@@ -13,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
-import java.net.InetSocketAddress;
-import java.util.List;
 
 /**
  * DnsProxyServerClientHandler
@@ -38,7 +35,7 @@ public class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<Dns
         log.trace("save DnsQuery before DNSHooks-Proxy: {}", query);
         ctx.channel().attr(AttributeKeyConstant.QUERY_BEFORE).set(query);
 
-        final DnsMessageTriplet dnsMessageTriplet = this.proxy(query);
+        final DnsMessageTriplet dnsMessageTriplet = this.client.lookup(query);
 
         log.trace("save DnsQuery after DNSHooks-Proxy: {}", dnsMessageTriplet.getQueryAfter());
         ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).set(dnsMessageTriplet.getQueryAfter());
@@ -55,18 +52,5 @@ public class DnsProxyServerClientHandler extends SimpleChannelInboundHandler<Dns
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         log.error("read DNS Query error", cause);
         ctx.channel().writeAndFlush(ErrorResponseConstant.UDP.ERROR);
-    }
-
-    private DnsMessageTriplet proxy(@Nonnull DnsQuery query) {
-        // TODO filter 127.0.0.1:53 && chose DNS server address
-        try {
-            List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
-            final InetSocketAddress dnsServerAddress = dnsServerAddressList.get(0);
-            log.trace("chose DNS Server Address: {}", dnsServerAddress);
-            return client.lookup(dnsServerAddress, query);
-        } catch (Exception e) {
-            log.error("proxy DNS Query error", e);
-            return new DnsMessageTriplet(null, null, ErrorResponseConstant.UDP.ERROR);
-        }
     }
 }
