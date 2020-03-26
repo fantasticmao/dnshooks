@@ -50,7 +50,8 @@ public interface ProxyQueryEncoder extends ChannelOutboundHandler {
             log.trace("save DnsQuery raw sender address: {}", sender);
             ctx.channel().attr(AttributeKeyConstant.RAW_SENDER).set(sender);
 
-            final DatagramDnsQuery queryAfter = DnsMessageUtil.newUdpQuery(sender,
+            final DatagramDnsQuery queryAfter = DnsMessageUtil.newUdpQuery(
+                sender, // sender in DNSHooks Proxy Client should be null
                 this.dnsServerAddress, in.content());
             log.trace("save DnsQuery after DNSHooks-Proxy: {}", queryAfter);
             ctx.channel().attr(AttributeKeyConstant.QUERY_AFTER).set(queryAfter);

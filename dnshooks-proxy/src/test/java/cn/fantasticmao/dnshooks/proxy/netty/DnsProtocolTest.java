@@ -45,7 +45,7 @@ public abstract class DnsProtocolTest {
         return dnsQuery;
     }
 
-    protected DatagramPacket newUdpPacket(InetSocketAddress sender, InetSocketAddress recipient) {
+    protected DatagramDnsResponse newUdpResponse(InetSocketAddress sender, InetSocketAddress recipient) {
         final int id = this.idGenerator.nextInt(Short.MAX_VALUE);
         log.trace("Transaction ID: {}", id);
 
@@ -57,7 +57,11 @@ public abstract class DnsProtocolTest {
         final DnsRecord answer = new DefaultDnsRawRecord("fantasticmao.cn", DnsRecordType.A, 575, ip);
         dnsResponse.addRecord(DnsSection.ANSWER, answer);
         log.trace("DatagramDnsResponse: {}", dnsResponse);
+        return dnsResponse;
+    }
 
+    protected DatagramPacket newUdpResponsePacket(InetSocketAddress sender, InetSocketAddress recipient) {
+        DatagramDnsResponse dnsResponse = newUdpResponse(sender, recipient);
         EmbeddedChannel embeddedChannel = new EmbeddedChannel(new DatagramDnsResponseEncoder());
         embeddedChannel.writeOutbound(dnsResponse);
         Assert.assertTrue(embeddedChannel.finish());

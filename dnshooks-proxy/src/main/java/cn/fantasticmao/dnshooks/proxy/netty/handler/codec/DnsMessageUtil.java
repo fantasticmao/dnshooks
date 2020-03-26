@@ -61,11 +61,25 @@ public class DnsMessageUtil {
     /**
      * new error {@link DatagramDnsResponse}
      */
+    public static DatagramDnsResponse newErrorUdpResponse(@Nonnull DatagramDnsQuery datagramDnsQuery,
+                                                          @Nonnull DnsResponseCode rCode) {
+        return newErrorUdpResponse(datagramDnsQuery.recipient(), datagramDnsQuery.sender(),
+            datagramDnsQuery, rCode);
+    }
+
+    /**
+     * new error {@link DatagramDnsResponse}
+     */
     public static DatagramDnsResponse newErrorUdpResponse(@Nonnull InetSocketAddress sender,
                                                           @Nonnull InetSocketAddress recipient,
                                                           @Nonnull DnsQuery dnsQuery,
                                                           @Nonnull DnsResponseCode rCode) {
-        return new DatagramDnsResponse(sender, recipient, dnsQuery.id(), dnsQuery.opCode(), rCode);
+        DatagramDnsResponse response = new DatagramDnsResponse(sender, recipient, dnsQuery.id(),
+            dnsQuery.opCode(), rCode);
+        if (dnsQuery.count(DnsSection.QUESTION) > 0) {
+            setRecord(DnsSection.QUESTION, dnsQuery, response);
+        }
+        return response;
     }
 
     private static void setRecord(DnsSection dnsSection, DnsMessage oldDnsMessage, DnsMessage newDnsMessage) {

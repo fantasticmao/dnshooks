@@ -18,7 +18,7 @@ public class ProxyResponseDecoderUdpTest extends DnsProtocolTest {
 
     @Test
     public void unitTest() throws Exception {
-        final DatagramPacket dnsResponsePacket = super.newUdpPacket(super.dnsServerAddress, super.proxyClientAddress);
+        final DatagramPacket dnsResponsePacket = super.newUdpResponsePacket(super.dnsServerAddress, super.proxyClientAddress);
         final ProxyResponseDecoder.Udp responseDecoder = new ProxyResponseDecoder.Udp(super.proxyServerAddress);
         final EmbeddedChannel embeddedChannel = new EmbeddedChannel(responseDecoder);
 

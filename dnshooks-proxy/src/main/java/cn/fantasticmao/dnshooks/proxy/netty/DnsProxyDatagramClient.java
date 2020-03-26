@@ -55,8 +55,7 @@ public class DnsProxyDatagramClient extends DnsProxyClient {
 
     @Nonnull
     @Override
-    public DnsMessageTriplet lookup(@Nonnull final DnsQuery query)
-        throws Exception {
+    public DnsMessageTriplet lookup(@Nonnull final DnsQuery query) throws Exception {
         if (!(query instanceof DatagramDnsQuery)) {
             throw new IllegalArgumentException(query.getClass().getName() + "cannot case to "
                 + DatagramDnsQuery.class.getName());

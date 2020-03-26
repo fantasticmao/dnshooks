@@ -41,7 +41,7 @@ public class ObtainMessageChannelHandler<T> extends SimpleChannelInboundHandler<
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("caught an exception", cause);
+        log.error("An exception '" + cause.getMessage() + "' was thrown by " + this.getClass(), cause);
         ctx.close();
     }
 }
