@@ -70,14 +70,23 @@ public class DnsMessageUtil {
     /**
      * new error {@link DatagramDnsResponse}
      */
+    public static DatagramDnsResponse newErrorUdpResponse(@Nonnull DatagramDnsResponse datagramDnsResponse,
+                                                          @Nonnull DnsResponseCode rCode) {
+        return newErrorUdpResponse(datagramDnsResponse.recipient(), datagramDnsResponse.sender(),
+            datagramDnsResponse, rCode);
+    }
+
+    /**
+     * new error {@link DatagramDnsResponse}
+     */
     public static DatagramDnsResponse newErrorUdpResponse(@Nonnull InetSocketAddress sender,
                                                           @Nonnull InetSocketAddress recipient,
-                                                          @Nonnull DnsQuery dnsQuery,
+                                                          @Nonnull DnsMessage dnsMessage,
                                                           @Nonnull DnsResponseCode rCode) {
-        DatagramDnsResponse response = new DatagramDnsResponse(sender, recipient, dnsQuery.id(),
-            dnsQuery.opCode(), rCode);
-        if (dnsQuery.count(DnsSection.QUESTION) > 0) {
-            setRecord(DnsSection.QUESTION, dnsQuery, response);
+        DatagramDnsResponse response = new DatagramDnsResponse(sender, recipient, dnsMessage.id(),
+            dnsMessage.opCode(), rCode);
+        if (dnsMessage.count(DnsSection.QUESTION) > 0) {
+            setRecord(DnsSection.QUESTION, dnsMessage, response);
         }
         return response;
     }

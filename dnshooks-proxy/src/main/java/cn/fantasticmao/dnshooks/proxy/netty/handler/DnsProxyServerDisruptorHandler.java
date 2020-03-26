@@ -3,15 +3,17 @@ package cn.fantasticmao.dnshooks.proxy.netty.handler;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageTranslator;
 import cn.fantasticmao.dnshooks.proxy.netty.AttributeKeyConstant;
-import cn.fantasticmao.dnshooks.proxy.netty.ErrorResponseConstant;
+import cn.fantasticmao.dnshooks.proxy.netty.handler.codec.DnsMessageUtil;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.channel.*;
+import io.netty.handler.codec.dns.DatagramDnsResponse;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
+import io.netty.handler.codec.dns.DnsResponseCode;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -26,7 +28,7 @@ import javax.annotation.concurrent.Immutable;
 public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapter {
     private final Disruptor<DnsMessage> disruptor;
 
-    public DnsProxyServerDisruptorHandler(@Nonnull Disruptor<DnsMessage> disruptor) {
+    public DnsProxyServerDisruptorHandler(@Nullable Disruptor<DnsMessage> disruptor) {
         this.disruptor = disruptor;
     }
 
@@ -44,13 +46,17 @@ public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapte
             log.trace("obtain DnsResponse before DNSHooks-Proxy: {}", responseBefore);
 
             try {
-                log.trace("publish event to Disruptor/Ring Buffer");
-                boolean result = this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
-                    queryBefore, queryAfter, responseBefore, responseAfter);
-                if (result) {
-                    log.trace("publish event to Disruptor/Ring Buffer success");
+                if (this.disruptor != null) {
+                    log.trace("publish event to Disruptor/Ring Buffer");
+                    boolean result = this.disruptor.getRingBuffer().tryPublishEvent(DnsMessageTranslator.INSTANCE,
+                        queryBefore, queryAfter, responseBefore, responseAfter);
+                    if (result) {
+                        log.trace("publish event to Disruptor/Ring Buffer success");
+                    } else {
+                        log.warn("publish event to Disruptor Disruptor/Ring Buffer error");
+                    }
                 } else {
-                    log.warn("publish event to Disruptor Disruptor/Ring Buffer error");
+                    log.trace("skipping publish event to Disruptor/Ring Buffer");
                 }
             } finally {
                 ReferenceCountUtil.release(queryBefore);
@@ -64,7 +70,14 @@ public class DnsProxyServerDisruptorHandler extends ChannelOutboundHandlerAdapte
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         log.error("write and flush DnsResponse after DNSHooks-Proxy error", future.cause());
-                        future.channel().writeAndFlush(ErrorResponseConstant.UDP.ERROR);
+                        if (responseAfter instanceof DatagramDnsResponse) {
+                            DatagramDnsResponse dnsResponse = (DatagramDnsResponse) responseAfter;
+                            DnsResponse response = DnsMessageUtil.newErrorUdpResponse(dnsResponse,
+                                DnsResponseCode.SERVFAIL);
+                            future.channel().writeAndFlush(response);
+                        } else {
+                            throw new IllegalArgumentException("DNSHooks-Proxy does only support UDP DNS until now");
+                        }
                     }
                 }
             });
