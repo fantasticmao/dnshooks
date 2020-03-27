@@ -72,7 +72,7 @@ public class DnsMessageUtil {
      */
     public static DatagramDnsResponse newErrorUdpResponse(@Nonnull DatagramDnsResponse datagramDnsResponse,
                                                           @Nonnull DnsResponseCode rCode) {
-        return newErrorUdpResponse(datagramDnsResponse.recipient(), datagramDnsResponse.sender(),
+        return newErrorUdpResponse(datagramDnsResponse.sender(), datagramDnsResponse.recipient(),
             datagramDnsResponse, rCode);
     }
 

@@ -4,21 +4,20 @@ import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessage;
 import cn.fantasticmao.dnshooks.proxy.disruptor.DnsMessageHook;
 
 /**
- * DnsMessageHookRpc
+ * MockHook
  *
  * @author maomao
- * @since 2020-03-15
+ * @since 2020-03-27
  */
-public class DnsMessageHookRpc implements DnsMessageHook {
+public class MockHook implements DnsMessageHook {
 
     @Override
     public String name() {
-        return "RPC Hook";
+        return "Mock Hook";
     }
 
     @Override
     public void onEvent(DnsMessage event, long sequence, boolean endOfBatch) throws Exception {
-        // TODO implement default RPC hook
-        throw new UnsupportedOperationException("TODO implement default RPC hook");
+
     }
 }

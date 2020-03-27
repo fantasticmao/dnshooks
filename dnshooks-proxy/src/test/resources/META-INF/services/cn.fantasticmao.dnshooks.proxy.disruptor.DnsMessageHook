@@ -1,0 +1,2 @@
+cn.fantasticmao.dnshooks.proxy.hook.DnsMessageHookNoOp
+cn.fantasticmao.dnshooks.proxy.hook.MockHook

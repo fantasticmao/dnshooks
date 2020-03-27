@@ -1,4 +1,4 @@
-# DNSHooks [![Actions Status](https://github.com/FantasticMao/dnshooks/workflows/action/badge.svg)](https://github.com/FantasticMao/dnshooks/actions) [![codecov](https://codecov.io/gh/FantasticMao/dnshooks/branch/master/graph/badge.svg)](https://codecov.io/gh/FantasticMao/dnshooks/branch/master) [![image](https://img.shields.io/badge/license-GPL3.0-green.svg)](https://github.com/FantasticMao/dnshooks/blob/master/LICENSE)
+# DNSHooks [![Actions Status](https://github.com/FantasticMao/dnshooks/workflows/action/badge.svg)](https://github.com/FantasticMao/dnshooks/actions) [![codecov](https://codecov.io/gh/FantasticMao/dnshooks/branch/master/graph/badge.svg)](https://codecov.io/gh/FantasticMao/dnshooks) [![image](https://img.shields.io/badge/license-GPL3.0-green.svg)](https://github.com/FantasticMao/dnshooks/blob/master/LICENSE)
 
 A simple DNS proxy, with support for some hooks (such as webhooks).
 

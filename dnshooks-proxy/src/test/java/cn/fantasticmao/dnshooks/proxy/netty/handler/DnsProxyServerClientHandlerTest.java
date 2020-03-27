@@ -51,7 +51,7 @@ public class DnsProxyServerClientHandlerTest extends DnsProtocolTest {
             @Nonnull
             @Override
             public DnsMessageTriplet lookup(@Nonnull DnsQuery query) throws Exception {
-                throw new UnsupportedOperationException("used for unit test");
+                throw new UnitTestException();
             }
         }) {
             final EmbeddedChannel embeddedChannel = new EmbeddedChannel(new DnsProxyServerClientHandler(client));

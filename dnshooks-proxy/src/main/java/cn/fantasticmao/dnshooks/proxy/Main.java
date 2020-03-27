@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        printBanner();
+        System.out.write(readBanner("/banner.txt"));
 
         // use blocking wait strategy，avoid to cost a lot of CPU resources
         final WaitStrategy waitStrategy = new BlockingWaitStrategy();
@@ -75,7 +75,7 @@ public class Main {
         }));
     }
 
-    private static InetSocketAddress choseDnsServerAddress() {
+    static InetSocketAddress choseDnsServerAddress() {
         // TODO filter 127.0.0.1:53 && chose DNS server address
         List<InetSocketAddress> dnsServerAddressList = DnsServerAddressUtil.listRawDnsServerAddress();
         return dnsServerAddressList.get(0);
@@ -86,7 +86,7 @@ public class Main {
      *
      * @return {@link DnsMessageHook} list
      */
-    private static List<DnsMessageHook> loadHooks() {
+    static List<DnsMessageHook> loadHooks() {
         List<DnsMessageHook> handlerList = new LinkedList<>();
         ServiceLoader.load(DnsMessageHook.class).forEach(handlerList::add);
         if (log.isTraceEnabled()) {
@@ -97,13 +97,13 @@ public class Main {
         return handlerList;
     }
 
-    private static void printBanner() throws URISyntaxException, IOException {
-        final Path path = Paths.get(Main.class.getResource("/banner.txt").toURI());
+    static byte[] readBanner(String banner) throws URISyntaxException, IOException {
+        final Path path = Paths.get(Main.class.getResource(banner).toURI());
         if (Files.exists(path)) {
-            byte[] bytes = Files.readAllBytes(path);
-            System.out.write(bytes);
+            return Files.readAllBytes(path);
         } else {
             log.trace("{} file does not exists", path);
+            return new byte[0];
         }
     }
 }

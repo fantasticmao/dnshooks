@@ -11,15 +11,21 @@ import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.dns.DatagramDnsResponse;
 import io.netty.handler.codec.dns.DnsQuery;
 import io.netty.handler.codec.dns.DnsResponse;
+import io.netty.handler.codec.dns.DnsResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * DnsProxyServerDisruptorHandlerTest
@@ -31,7 +37,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class DnsProxyServerDisruptorHandlerTest extends DnsProtocolTest {
 
     @Test
-    public void unitTest() throws Exception {
+    public void testSuccess() throws Exception {
         final WaitStrategy waitStrategy = new BlockingWaitStrategy();
         final Disruptor<DnsMessage> disruptor = new Disruptor<>(DnsMessageFactory.INSTANCE,
             Constant.RINGBUFFER_SIZE, HookThreadFactory.INSTANCE, ProducerType.MULTI, waitStrategy);
@@ -62,6 +68,40 @@ public class DnsProxyServerDisruptorHandlerTest extends DnsProtocolTest {
         Assert.assertEquals(responseBefore, dnsMessage.getResponseBefore());
     }
 
+    @Test
+    public void testError() {
+        final EmbeddedChannel embeddedChannel = new EmbeddedChannel(
+            new ChannelOutboundHandlerAdapter() {
+                private AtomicInteger triggerCount = new AtomicInteger(0);
+
+                @Override
+                public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                    // trigger an exception
+                    if (triggerCount.getAndIncrement() < 1) {
+                        throw new UnitTestException();
+                    }
+                    super.write(ctx, msg, promise);
+                }
+            },
+            new DnsProxyServerDisruptorHandler(null));
+
+        final DatagramDnsResponse responseAfter = newUdpResponse(super.proxyServerAddress, super.dnsClientAddress);
+        try {
+            embeddedChannel.writeOutbound(responseAfter);
+            Assert.fail();
+        } catch (UnitTestException ignore) {
+        }
+        Assert.assertTrue(embeddedChannel.finish());
+
+        final DatagramDnsResponse dnsResponse = embeddedChannel.readOutbound();
+        Assert.assertEquals(responseAfter.sender(), dnsResponse.sender());
+        Assert.assertEquals(responseAfter.recipient(), dnsResponse.recipient());
+        Assert.assertEquals(DnsResponseCode.SERVFAIL, dnsResponse.code());
+    }
+
+    /**
+     * Used to synchronized get message from Disruptor {@link com.lmax.disruptor.EventHandler}
+     */
     private static class SyncEventHandler implements DnsMessageHook {
         private BlockingQueue<DnsMessage> msg = new LinkedBlockingQueue<>();
 
